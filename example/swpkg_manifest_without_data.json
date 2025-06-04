@@ -1,0 +1,384 @@
+{
+    "sw_package_id": 175,
+    "sw_package_version": "20.0.0.0",
+    "sw_package_type": "standard",
+    "generic_product_module": {
+        "id": "GPM-2",
+        "version": "12",
+        "location": "url:to_car_weaver"
+    },
+    "source_references": [
+        {
+            "idx": 1,
+            "name": "Air Suspension Controller",
+            "version": "BSW_VCC_20.0.1",
+            "location": "https://gerrit_link",
+            "components": [
+                {
+                    "id": "C-9872",
+                    "persistent_id": "C-23434",
+                    "version": "18",
+                    "location": "url:to_car_weaver"
+                }
+            ],
+            "additional_information": [
+                {
+                    "title": "SumModMgr",
+                    "category": "design",
+                    "kind": "Simulink",
+                    "content_type": "application/model",
+                    "location": "https://gerrit_link"
+                },
+                {
+                    "title": "SumModMgr",
+                    "category": "design",
+                    "kind": "Generated Code",
+                    "content_type": "application/source code",
+                    "location": "https://gerrit_link"
+                }
+            ],
+            "regulatory_requirements": [
+                "N/A"
+            ],
+            "change_log": {
+                "filenamn": "Gerrit log",
+                "version": "BSW_VCC_20.0.1",
+                "location": "https://gerrit_link"
+            }
+        },
+        {
+            "idx": 2,
+            "name": "Air Suspension Controller",
+            "version": "BSW_VCC_20.0.1",
+            "location": "https://gerrit_link",
+            "components": [
+                {
+                    "id": "C-9872",
+                    "persistent_id": "C-23434",
+                    "version": "18",
+                    "location": "url:to_car_weaver"
+                }
+            ],
+            "additional_information": [
+                {
+                    "title": "ShrdSrvQM",
+                    "category": "design",
+                    "kind": "Simulink",
+                    "content_type": "application/model",
+                    "location": "https://gerrit_link"
+                },
+                {
+                    "title": "ShrdSrvQM",
+                    "category": "design",
+                    "kind": "Generated Code",
+                    "content_type": "application/source code",
+                    "location": "https://gerrit_link"
+                }
+            ],
+            "regulatory_requirements": [
+                "N/A"
+            ],
+            "change_log": {
+                "filenamn": "Gerrit log",
+                "version": "BSW_VCC_20.0.1",
+                "location": "https://gerrit_link"
+            }
+        },
+        {
+            "idx": 3,
+            "name": "Air Suspension Controller",
+            "version": "BSW_VCC_20.0.1",
+            "location": "https://gerrit_link",
+            "components": [
+                {
+                    "id": "C-9872",
+                    "persistent_id": "C-23434",
+                    "version": "18",
+                    "location": "url:to_car_weaver"
+                }
+            ],
+            "additional_information": [
+                {
+                    "title": "AirPMngt",
+                    "category": "design",
+                    "kind": "Simulink",
+                    "content_type": "application/model",
+                    "location": "https://gerrit_link"
+                },
+                {
+                    "title": "AirPMngt",
+                    "category": "design",
+                    "kind": "Generated Code",
+                    "content_type": "application/source code",
+                    "location": "https://gerrit_link"
+                }
+            ],
+            "regulatory_requirements": [
+                "N/A"
+            ],
+            "change_log": {
+                "filenamn": "Gerrit log",
+                "version": "BSW_VCC_20.0.1",
+                "location": "https://gerrit_link"
+            }
+        },
+        {
+            "idx": 4,
+            "name": "Air Suspension Controller",
+            "version": "BSW_VCC_20.0.1",
+            "location": "https://gerrit_link",
+            "components": [
+                {
+                    "id": "C-9872",
+                    "version": "18",
+                    "persistent_id": "C-23434",
+                    "location": "url:to_car_weaver"
+                }
+            ],
+            "additional_information": [
+                {
+                    "title": "LvlCtrlMod",
+                    "category": "design",
+                    "kind": "Simulink",
+                    "content_type": "application/model",
+                    "location": "https://gerrit_link"
+                },
+                {
+                    "title": "LvlCtrlMod",
+                    "category": "design",
+                    "kind": "Generated Code",
+                    "content_type": "application/source code",
+                    "location": "https://gerrit_link"
+                }
+            ],
+            "regulatory_requirements": [
+                "N/A"
+            ],
+            "change_log": {
+                "filenamn": "Gerrit log",
+                "version": "BSW_VCC_20.0.1",
+                "location": "https://gerrit_link"
+            }
+        },
+        {
+            "idx": 5,
+            "name": "Air Suspension Controller",
+            "version": "BSW_VCC_20.0.1",
+            "location": "https://gerrit_link",
+            "components": [
+                {
+                    "id": "C-9872",
+                    "persistent_id": "C-23434",
+                    "version": "18",
+                    "location": "url:to_car_weaver"
+                }
+            ],
+            "additional_information": [
+                {
+                    "title": "AirSuspCptDiagc",
+                    "category": "design",
+                    "kind": "Simulink",
+                    "content_type": "application/model",
+                    "location": "https://gerrit_link"
+                },
+                {
+                    "title": "AirSuspCptDiagc",
+                    "category": "design",
+                    "kind": "Generated Code",
+                    "content_type": "application/source code",
+                    "location": "https://gerrit_link"
+                }
+            ],
+            "regulatory_requirements": [
+                "N/A"
+            ],
+            "change_log": {
+                "filenamn": "Gerrit log",
+                "version": "BSW_VCC_20.0.1",
+                "location": "https://gerrit_link"
+            }
+        },
+        {
+            "idx": 6,
+            "name": "Air Suspension Controller",
+            "version": "BSW_VCC_20.0.1",
+            "location": "https://gerrit_link",
+            "components": [
+                {
+                    "id": "C-9872",
+                    "persistent_id": "C-23434",
+                    "version": "18",
+                    "location": "url:to_car_weaver"
+                }
+            ],
+            "additional_information": [
+                {
+                    "title": "MonrVehLvl",
+                    "category": "design",
+                    "kind": "Simulink",
+                    "content_type": "application/model",
+                    "location": "https://gerrit_link"
+                },
+                {
+                    "title": "MonrVehLvl",
+                    "category": "design",
+                    "kind": "Generated Code",
+                    "content_type": "application/source code",
+                    "location": "https://gerrit_link"
+                }
+            ],
+            "regulatory_requirements": [
+                "N/A"
+            ],
+            "change_log": {
+                "filenamn": "Gerrit log",
+                "version": "BSW_VCC_20.0.1",
+                "location": "https://gerrit_link"
+            }
+        },
+        {
+            "idx": 7,
+            "name": "Spring Stiffness Controller",
+            "version": "BSW_VCC_20.0.1",
+            "location": "https://gerrit_link",
+            "components": [
+                {
+                    "id": "C-9874",
+                    "persistent_id": "C-21248",
+                    "version": "10",
+                    "location": "url:to_car_weaver"
+                }
+            ],
+            "additional_information": [
+                {
+                    "title": "AirSprgVolMngt",
+                    "category": "design",
+                    "kind": "Simulink",
+                    "content_type": "application/model",
+                    "location": "https://gerrit_link"
+                },
+                {
+                    "title": "AirSprgVolMngt",
+                    "category": "design",
+                    "kind": "Generated Code",
+                    "content_type": "application/source code",
+                    "location": "https://gerrit_link"
+                }
+            ],
+            "regulatory_requirements": [
+                "N/A"
+            ],
+            "change_log": {
+                "filenamn": "Gerrit log",
+                "version": "BSW_VCC_20.0.1",
+                "location": "https://gerrit_link"
+            }
+        }
+    ],
+    "swad": [
+        {
+            "id": "2470c472247fec08a3c12c20829070745f20cc4d",
+            "name": "SWAD suspension",
+            "location": "https://gerrit_link"
+        }
+    ],
+    "swdd": [
+        {
+            "id": "34176208",
+            "name": "NOTE-SWDD-34176208-01/10-SUM Functions",
+            "location": "https://gerrit_link"
+        }
+    ],
+    "artifacts": [
+        {
+            "idx": 1,
+            "name": "SUM SWLM",
+            "kind": "VBF file",
+            "version": "BSW_VCC_20.0.1",
+            "location": "https://gerrit_link",
+            "sha256": "902df162cb5ae40875488e2319862b4cdaa4948567c4f83dbd4c2e56be950d5a",
+            "target_platform": "SUM1",
+            "buildtime_configurations": [
+                {
+                    "cp": "VCTN",
+                    "cpv": [
+                        "PRR"
+                    ]
+                }
+            ],
+            "source_references_idx": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ]
+        },
+        {
+            "idx": 2,
+            "name": "SUM SWP1",
+            "kind": "VBF file",
+            "version": "BSW_VCC_20.0.1_v2.0",
+            "location": "https://gerrit_link",
+            "sha256": "686d6c471d2d3747dba01d5c0bd746c265bd379d3967898ed84c49c4837e1d2c",
+            "target_platform": "SUM1",
+            "buildtime_configurations": [
+                {
+                    "cp": "VCTN",
+                    "cpv": [
+                        "PRR"
+                    ]
+                }
+            ],
+            "source_references_idx": [
+                1,
+                2
+            ]
+        },
+        {
+            "idx": 3,
+            "name": "SUM SWP2",
+            "kind": "VBF file",
+            "version": "BSW_VCC_20.0.1_v1.0",
+            "location": "https://gerrit_link",
+            "sha256": "69850200c276f38f8f4cb8a0aceb6f1d73dc1d4e0ba8d3bf1f7620f9e72fa7d2",
+            "target_platform": "SUM1",
+            "buildtime_configurations": [
+                {
+                    "cp": "VCTN",
+                    "cpv": [
+                        "PRR"
+                    ]
+                }
+            ],
+            "source_references_idx": [
+                6
+            ]
+        },
+        {
+            "idx": 4,
+            "name": "SUM SWP4",
+            "kind": "VBF file",
+            "version": "BSW_VCC_20.0.1_v2.0",
+            "location": "https://gerrit_link",
+            "sha256": "72782ad70dceb3146cbcd88d28fc0c7aeccae7b0b641f5fd59f29fd5b2a38022",
+            "target_platform": "SUM1",
+            "buildtime_configurations": [
+                {
+                    "cp": "VCTN",
+                    "cpv": [
+                        "PRR"
+                    ]
+                }
+            ],
+            "source_references_idx": [
+                3,
+                4,
+                5,
+                7
+            ]
+        }
+    ]
+}
