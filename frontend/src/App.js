@@ -52,7 +52,7 @@ function App() {
         {
           idx: (selectedProfile.source_references?.length || 0) + 1,
           name: "",
-          version: "",
+          version: "", // Per-run, filled at generation
           location: "",
           components: [],
           additional_information: [],
@@ -72,7 +72,7 @@ function App() {
           idx: (selectedProfile.artifacts?.length || 0) + 1,
           name: "",
           kind: "VBF file",
-          version: "",
+          version: "", // Per-run, filled at generation
           location: "",
           sha256: "",
           target_platform: DEFAULT_TARGET_PLATFORM,
@@ -87,12 +87,34 @@ function App() {
   const [generationInput, setGenerationInput] = useState({ sw_version: "" });
   const [generatedJSON, setGeneratedJSON] = useState(null);
 
+  // Fill all empty "version" fields recursively
+  function fillVersionFields(obj, sw_version) {
+    if (Array.isArray(obj)) {
+      return obj.map(item => fillVersionFields(item, sw_version));
+    } else if (obj && typeof obj === 'object') {
+      const newObj = { ...obj };
+      for (const key of Object.keys(newObj)) {
+        if (key === "version" && (!newObj[key] || newObj[key] === "")) {
+          newObj[key] = sw_version;
+        } else {
+          newObj[key] = fillVersionFields(newObj[key], sw_version);
+        }
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
   const handleGenerate = () => {
-    const sw_package_version = generationInput.sw_version.split("_").pop() + ".0";
+    const sw_version = generationInput.sw_version;
+    const sw_package_version = sw_version.split("_").pop() + ".0";
+    // Fill any empty version field
+    const filledProfile = fillVersionFields(selectedProfile, sw_version);
+
     setGeneratedJSON({
-      ...selectedProfile,
+      ...filledProfile,
       sw_package_version,
-      sw_version: generationInput.sw_version,
+      sw_version,
     });
   };
 
@@ -182,7 +204,27 @@ function App() {
                     }}
                   />
                 </div>
-                {/* Add more fields for name, version, components, etc. */}
+                <div>
+                  <label>Name:</label>
+                  <input
+                    value={ref.name}
+                    onChange={e => {
+                      const arr = [...selectedProfile.source_references];
+                      arr[idx].name = e.target.value;
+                      updateProfile({ source_references: arr });
+                    }}
+                  />
+                </div>
+                <div>
+                  <label>Version:</label>
+                  <input
+                    value={ref.version}
+                    readOnly
+                    style={{ background: "#eee" }}
+                    placeholder="Will be filled at generation"
+                  />
+                </div>
+                {/* --- Additional Information --- */}
                 <h4>Additional Information</h4>
                 {ref.additional_information && ref.additional_information.map((info, infoIdx) => (
                   <div key={infoIdx} style={{ marginBottom: 10, padding: 6, background: "#f4f8fc", borderRadius: 6 }}>
@@ -309,7 +351,16 @@ function App() {
                   <option value="SUM SWP3">SUM SWP3</option>
                   <option value="SUM SWP4">SUM SWP4</option>
                 </select>
-                {/* Add more fields for kind, version, etc. */}
+                <div>
+                  <label>Version:</label>
+                  <input
+                    value={art.version}
+                    readOnly
+                    style={{ background: "#eee" }}
+                    placeholder="Will be filled at generation"
+                  />
+                </div>
+                {/* Add more fields for kind, location, sha256, etc. */}
               </div>
             ))}
             <button onClick={addArtifact}>Add Artifact</button>
