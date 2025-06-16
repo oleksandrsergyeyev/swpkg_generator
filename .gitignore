@@ -1,3 +1,4 @@
 .idea
 .venv
+*/.env
 example/swpkg_manifest_175-20_0_0_automation_info.json
