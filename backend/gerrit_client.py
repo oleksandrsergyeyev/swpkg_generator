@@ -54,7 +54,10 @@ class GerritClient:
         return filtered
 
     def get_tag_url_by_exact_name(self, project, tag_name):
-        """Return the full 'browse' URL for the tag exactly matching tag_name, or None."""
+        """Return the full 'browse' URL for the tag exactly matching tag_name, or None.
+        Example:
+            tag_link = GerritClient().get_tag_url_by_exact_name("GenData/SimulinkFunc", "BSW_VCC_20.0.1")"""
+
         tags = self.list_tags(project)
         tag_ref = f"refs/tags/{tag_name}"
         for tag in tags:
@@ -77,5 +80,3 @@ class GerritClient:
                         print(f"URL to tag '{tag_name}': {base_url}{rel_url}")
                         return f"{base_url}{rel_url}"
         return None
-
-GerritClient = GerritClient().get_tag_url_by_exact_name("GenData/SimulinkFunc", "BSW_VCC_20.0.1")
