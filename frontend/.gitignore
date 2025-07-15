@@ -4,6 +4,10 @@
 /node_modules
 /.pnp
 .pnp.js
+__pycache__/
+backend/__pycache__/
+backend/__pycache__/*.pyc
+
 
 # testing
 /coverage

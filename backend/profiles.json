@@ -1,0 +1,55 @@
+[
+  {
+    "sw_package_id": 175,
+    "swad": [
+      {
+        "id": "2470c472247fec08a3c12c20829070745f20cc4d",
+        "name": "SWAD suspension",
+        "location": "https://gitlab.cm.volvocars.biz/CSA/hp-platform-sw-design/-/blob/master/suspension/ReadMe.md"
+      },
+      {
+        "id": "",
+        "name": "",
+        "location": ""
+      }
+    ],
+    "swdd": [
+      {
+        "id": "",
+        "name": "",
+        "location": ""
+      }
+    ],
+    "generic_product_module": {
+      "location": "url:swap://SystemWeaver:3000/x0400000003B1D289",
+      "id": "",
+      "version": ""
+    },
+    "source_references": [],
+    "artifacts": []
+  },
+  {
+    "sw_package_id": 200,
+    "swad": [
+      {
+        "id": "32",
+        "name": "3",
+        "location": "3"
+      }
+    ],
+    "swdd": [
+      {
+        "id": "",
+        "name": "",
+        "location": ""
+      }
+    ],
+    "generic_product_module": {
+      "location": "1111111111",
+      "id": "212",
+      "version": "33e3"
+    },
+    "source_references": [],
+    "artifacts": []
+  }
+]

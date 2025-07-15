@@ -1,12 +1,69 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List
+import json
+import os
 
 app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+PROFILE_FILE = "profiles.json"
+
+# --- PROFILE STORAGE UTILS ---
+def load_profiles():
+    if not os.path.exists(PROFILE_FILE):
+        return []
+    with open(PROFILE_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_profiles(profiles):
+    with open(PROFILE_FILE, "w", encoding="utf-8") as f:
+        json.dump(profiles, f, indent=2)
+
+# --- PROFILE API ENDPOINTS ---
+
+@app.get("/api/profiles")
+def get_profiles():
+    return load_profiles()
+
+@app.post("/api/profiles")
+def add_profile(profile: dict):
+    profiles = load_profiles()
+    if any(p["sw_package_id"] == profile["sw_package_id"] for p in profiles):
+        raise HTTPException(400, "Profile with this ID already exists")
+    profiles.append(profile)
+    save_profiles(profiles)
+    return {"success": True}
+
+@app.put("/api/profiles/{sw_package_id}")
+def update_profile(sw_package_id: int, profile: dict):
+    profiles = load_profiles()
+    found = False
+    for idx, p in enumerate(profiles):
+        if str(p["sw_package_id"]) == str(sw_package_id):
+            profiles[idx] = profile
+            found = True
+            break
+    if not found:
+        raise HTTPException(404, "Profile not found")
+    save_profiles(profiles)
+    return {"success": True}
+
+@app.delete("/api/profiles/{sw_package_id}")
+def delete_profile(sw_package_id: int):
+    profiles = load_profiles()
+    profiles = [p for p in profiles if str(p["sw_package_id"]) != str(sw_package_id)]
+    save_profiles(profiles)
+    return {"success": True}
+
+# --- GENERATION ENDPOINTS (your existing logic) ---
 
 def parse_sw_package_version(sw_version):
-    # Example: "BSW_VCC_20.0.1" → "20.0.1.0"
-    # Extract after the last '_' and add ".0"
     if not sw_version:
         return ""
     if "_" in sw_version:
@@ -14,8 +71,6 @@ def parse_sw_package_version(sw_version):
     else:
         numeric = sw_version
     return f"{numeric}.0"
-
-# --- (Mock fetchers as before, but now take sw_version as input) ---
 
 def fetch_generic_product_module(sw_package_id):
     return {
@@ -151,14 +206,11 @@ def fetch_artifacts(sw_version):
         }
     ]
 
-# --- API endpoint ---
-
 @app.post("/api/generate")
 async def generate(data: dict):
     sw_package_id = data.get("sw_package_id")
-    sw_version_input = data.get("sw_version")  # now input is 'sw_version', e.g. "BSW_VCC_20.0.1"
+    sw_version_input = data.get("sw_version")
     sw_package_version = parse_sw_package_version(sw_version_input)
-
     result = {
         "sw_package_id": sw_package_id,
         "sw_package_version": sw_package_version,
