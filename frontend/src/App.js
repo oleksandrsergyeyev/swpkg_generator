@@ -14,7 +14,8 @@ const DEFAULT_CPV = "PRR";
 
 const EMPTY_PROFILE = () => ({
   sw_package_id: "",
-  swad: [], // no default entry
+  profile_name: "",
+  swad: [],
   swdd: [],
   generic_product_module: { location: "", id: "", version: "" },
   source_references: [],
@@ -176,13 +177,21 @@ function App() {
             <>
               <button onClick={startAddProfile}>Add Profile</button>
               <table style={{ width: "100%", marginTop: 18, borderCollapse: "collapse" }}>
-                <thead><tr>
-                  <th>ID</th><th>GPM Location</th><th>SWAD count</th><th>SWDD count</th><th>Actions</th>
-                </tr></thead>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Profile Name</th>
+                    <th>GPM Location</th>
+                    <th>SWAD count</th>
+                    <th>SWDD count</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {profiles.map((p, idx) => (
                     <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
                       <td>{p.sw_package_id}</td>
+                      <td>{p.profile_name}</td>
                       <td>{p.generic_product_module.location}</td>
                       <td>{p.swad.length}</td>
                       <td>{p.swdd.length}</td>
@@ -213,6 +222,14 @@ function App() {
                   onChange={e => setEditProfile(p => ({ ...p, sw_package_id: e.target.value.replace(/\D/, "") }))}
                   style={{ width: 80 }}
                   disabled={profileEditIdx !== null}
+                />
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <label>Profile Name: </label>
+                <input
+                  value={editProfile.profile_name}
+                  onChange={e => setEditProfile(p => ({ ...p, profile_name: e.target.value }))}
+                  style={{ width: 220 }}
                 />
               </div>
               <div style={{ marginTop: 10 }}>
