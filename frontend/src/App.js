@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-// === Adjust if your FastAPI backend runs elsewhere ===
+// Adjust if your FastAPI backend runs elsewhere
 const API_URL = "http://localhost:8000/api";
 
 const DEFAULT_CATEGORY = "design";
@@ -14,8 +14,8 @@ const DEFAULT_CPV = "PRR";
 
 const EMPTY_PROFILE = () => ({
   sw_package_id: "",
-  swad: [{ id: "", name: "", location: "" }],
-  swdd: [{ id: "", name: "", location: "" }],
+  swad: [], // no default entry
+  swdd: [],
   generic_product_module: { location: "", id: "", version: "" },
   source_references: [],
   artifacts: [],
@@ -76,14 +76,12 @@ function App() {
   };
   const startEditProfile = idx => {
     setProfileEditIdx(idx);
-    // Deep copy for editing
     setEditProfile(JSON.parse(JSON.stringify(profiles[idx])));
   };
   const cancelEditProfile = () => {
     setEditProfile(null);
     setProfileEditIdx(null);
   };
-
   const saveProfile = async () => {
     if (!editProfile.sw_package_id) return alert("Profile must have SW Package ID!");
     try {
@@ -99,7 +97,6 @@ function App() {
       alert("Error saving: " + err.message);
     }
   };
-
   const deleteProfile = async idx => {
     try {
       await deleteProfileById(profiles[idx].sw_package_id);
@@ -252,66 +249,8 @@ function App() {
                   style={{ width: 60 }}
                 />
               </div>
-              {/* SWAD/SWDD */}
-              <div style={{ marginTop: 18 }}>
-                <h4>SWAD</h4>
-                {editProfile.swad.map((sw, idx) => (
-                  <div key={idx}>
-                    <input placeholder="id" value={sw.id}
-                      onChange={e => {
-                        const arr = [...editProfile.swad];
-                        arr[idx].id = e.target.value;
-                        setEditProfile(p => ({ ...p, swad: arr }));
-                      }}
-                    />
-                    <input placeholder="name" value={sw.name}
-                      onChange={e => {
-                        const arr = [...editProfile.swad];
-                        arr[idx].name = e.target.value;
-                        setEditProfile(p => ({ ...p, swad: arr }));
-                      }}
-                    />
-                    <input placeholder="location" value={sw.location}
-                      onChange={e => {
-                        const arr = [...editProfile.swad];
-                        arr[idx].location = e.target.value;
-                        setEditProfile(p => ({ ...p, swad: arr }));
-                      }}
-                    />
-                  </div>
-                ))}
-                <button style={{ marginTop: 4 }} onClick={() => setEditProfile(p => ({ ...p, swad: [...p.swad, { id: "", name: "", location: "" }] }))}>Add SWAD</button>
-              </div>
-              <div style={{ marginTop: 18 }}>
-                <h4>SWDD</h4>
-                {editProfile.swdd.map((sw, idx) => (
-                  <div key={idx}>
-                    <input placeholder="id" value={sw.id}
-                      onChange={e => {
-                        const arr = [...editProfile.swdd];
-                        arr[idx].id = e.target.value;
-                        setEditProfile(p => ({ ...p, swdd: arr }));
-                      }}
-                    />
-                    <input placeholder="name" value={sw.name}
-                      onChange={e => {
-                        const arr = [...editProfile.swdd];
-                        arr[idx].name = e.target.value;
-                        setEditProfile(p => ({ ...p, swdd: arr }));
-                      }}
-                    />
-                    <input placeholder="location" value={sw.location}
-                      onChange={e => {
-                        const arr = [...editProfile.swdd];
-                        arr[idx].location = e.target.value;
-                        setEditProfile(p => ({ ...p, swdd: arr }));
-                      }}
-                    />
-                  </div>
-                ))}
-                <button style={{ marginTop: 4 }} onClick={() => setEditProfile(p => ({ ...p, swdd: [...p.swdd, { id: "", name: "", location: "" }] }))}>Add SWDD</button>
-              </div>
-              {/* Source References */}
+
+              {/* -------- SOURCE REFERENCES FIRST -------- */}
               <div style={{ marginTop: 18 }}>
                 <h4>Source References</h4>
                 {editProfile.source_references.map((ref, idx) => (
@@ -412,7 +351,82 @@ function App() {
                   }]
                 }))}>Add Source Reference</button>
               </div>
-              {/* Artifacts */}
+
+              {/* -------- SWAD -------- */}
+              <div style={{ marginTop: 18 }}>
+                <h4>SWAD</h4>
+                {editProfile.swad.length === 0 && <div style={{ color: "#999" }}>No SWAD entries</div>}
+                {editProfile.swad.map((sw, idx) => (
+                  <div key={idx} style={{ display: "flex", alignItems: "center" }}>
+                    <input placeholder="id" value={sw.id}
+                      onChange={e => {
+                        const arr = [...editProfile.swad];
+                        arr[idx].id = e.target.value;
+                        setEditProfile(p => ({ ...p, swad: arr }));
+                      }}
+                    />
+                    <input placeholder="name" value={sw.name}
+                      onChange={e => {
+                        const arr = [...editProfile.swad];
+                        arr[idx].name = e.target.value;
+                        setEditProfile(p => ({ ...p, swad: arr }));
+                      }}
+                    />
+                    <input placeholder="location" value={sw.location}
+                      onChange={e => {
+                        const arr = [...editProfile.swad];
+                        arr[idx].location = e.target.value;
+                        setEditProfile(p => ({ ...p, swad: arr }));
+                      }}
+                    />
+                    <button style={{ marginLeft: 8, color: "red" }}
+                      onClick={() => setEditProfile(p => ({
+                        ...p,
+                        swad: p.swad.filter((_, i) => i !== idx)
+                      }))}
+                    >Remove</button>
+                  </div>
+                ))}
+                <button style={{ marginTop: 4 }} onClick={() => setEditProfile(p => ({ ...p, swad: [...p.swad, { id: "", name: "", location: "" }] }))}>Add SWAD</button>
+              </div>
+              {/* -------- SWDD -------- */}
+              <div style={{ marginTop: 18 }}>
+                <h4>SWDD</h4>
+                {editProfile.swdd.length === 0 && <div style={{ color: "#999" }}>No SWDD entries</div>}
+                {editProfile.swdd.map((sw, idx) => (
+                  <div key={idx} style={{ display: "flex", alignItems: "center" }}>
+                    <input placeholder="id" value={sw.id}
+                      onChange={e => {
+                        const arr = [...editProfile.swdd];
+                        arr[idx].id = e.target.value;
+                        setEditProfile(p => ({ ...p, swdd: arr }));
+                      }}
+                    />
+                    <input placeholder="name" value={sw.name}
+                      onChange={e => {
+                        const arr = [...editProfile.swdd];
+                        arr[idx].name = e.target.value;
+                        setEditProfile(p => ({ ...p, swdd: arr }));
+                      }}
+                    />
+                    <input placeholder="location" value={sw.location}
+                      onChange={e => {
+                        const arr = [...editProfile.swdd];
+                        arr[idx].location = e.target.value;
+                        setEditProfile(p => ({ ...p, swdd: arr }));
+                      }}
+                    />
+                    <button style={{ marginLeft: 8, color: "red" }}
+                      onClick={() => setEditProfile(p => ({
+                        ...p,
+                        swdd: p.swdd.filter((_, i) => i !== idx)
+                      }))}
+                    >Remove</button>
+                  </div>
+                ))}
+                <button style={{ marginTop: 4 }} onClick={() => setEditProfile(p => ({ ...p, swdd: [...p.swdd, { id: "", name: "", location: "" }] }))}>Add SWDD</button>
+              </div>
+              {/* -------- ARTIFACTS -------- */}
               <div style={{ marginTop: 18 }}>
                 <h4>Artifacts</h4>
                 {editProfile.artifacts.map((art, idx) => (
@@ -479,7 +493,7 @@ function App() {
         </div>
       )}
 
-      {/* ---- GENERATION TAB ---- */}
+      {/* GENERATION TAB */}
       {activeTab === "generate" && (
         <div style={{
           maxWidth: 1000,
