@@ -11,36 +11,59 @@
     "swdd": [],
     "generic_product_module": {
       "location": "url:swap://SystemWeaver:3000/x0400000003B1D289",
-      "id": "",
-      "version": ""
+      "id": "GPM-2",
+      "version": "12"
     },
-    "source_references": [],
+    "source_references": [
+      {
+        "idx": 1,
+        "name": "Air Suspension Controller",
+        "version": "",
+        "location": "https://bc-function-sw-gerrit.volvocars.biz/plugins/gitiles/SWComponents/LevelingControl/+/refs/tags/BSW_VCC_20.0.1",
+        "components": [],
+        "additional_information": [
+          {
+            "title": "SumModMgr",
+            "category": "design",
+            "kind": "Simulink",
+            "content_type": "application/model",
+            "location": "https://bc-function-sw-gerrit.volvocars.biz/plugins/gitiles/SWComponents/SharedServices/+/refs/tags/BSW_VCC_20.0.1/SumModMgr_SWC/"
+          },
+          {
+            "title": "SumModMgr",
+            "category": "design",
+            "kind": "Generated Code",
+            "content_type": "application/source code",
+            "location": "https://bc-function-sw-gerrit.volvocars.biz/plugins/gitiles/GenData/SimulinkFunc/+/refs/tags/BSW_VCC_20.0.1/SumModMgr_swc_autosar_rtw/"
+          }
+        ],
+        "regulatory_requirements": [
+          "N/A"
+        ],
+        "change_log": {
+          "filenamn": "Gerrit log",
+          "version": "",
+          "location": ""
+        }
+      },
+      {
+        "idx": 2,
+        "name": "",
+        "version": "",
+        "location": "",
+        "components": [],
+        "additional_information": [],
+        "regulatory_requirements": [
+          "N/A"
+        ],
+        "change_log": {
+          "filenamn": "Gerrit log",
+          "version": "",
+          "location": ""
+        }
+      }
+    ],
     "artifacts": [],
     "profile_name": "SWLM"
-  },
-  {
-    "sw_package_id": 200,
-    "swad": [
-      {
-        "id": "32",
-        "name": "3",
-        "location": "3"
-      }
-    ],
-    "swdd": [
-      {
-        "id": "",
-        "name": "",
-        "location": ""
-      }
-    ],
-    "generic_product_module": {
-      "location": "1111111111",
-      "id": "212",
-      "version": "33e3"
-    },
-    "source_references": [],
-    "artifacts": [],
-    "profile_name": "Some other package"
   }
 ]

@@ -1,6 +1,5 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
 import json
 import os
 
@@ -23,7 +22,7 @@ def load_profiles():
 
 def save_profiles(profiles):
     with open(PROFILE_FILE, "w", encoding="utf-8") as f:
-        json.dump(profiles, f, indent=2)
+        json.dump(profiles, f, indent=2, ensure_ascii=False)
 
 # --- PROFILE API ENDPOINTS ---
 
@@ -32,36 +31,12 @@ def get_profiles():
     return load_profiles()
 
 @app.post("/api/profiles")
-def add_profile(profile: dict):
-    profiles = load_profiles()
-    if any(p["sw_package_id"] == profile["sw_package_id"] for p in profiles):
-        raise HTTPException(400, "Profile with this ID already exists")
-    profiles.append(profile)
+async def set_profiles(request: Request):
+    profiles = await request.json()
     save_profiles(profiles)
     return {"success": True}
 
-@app.put("/api/profiles/{sw_package_id}")
-def update_profile(sw_package_id: int, profile: dict):
-    profiles = load_profiles()
-    found = False
-    for idx, p in enumerate(profiles):
-        if str(p["sw_package_id"]) == str(sw_package_id):
-            profiles[idx] = profile
-            found = True
-            break
-    if not found:
-        raise HTTPException(404, "Profile not found")
-    save_profiles(profiles)
-    return {"success": True}
-
-@app.delete("/api/profiles/{sw_package_id}")
-def delete_profile(sw_package_id: int):
-    profiles = load_profiles()
-    profiles = [p for p in profiles if str(p["sw_package_id"]) != str(sw_package_id)]
-    save_profiles(profiles)
-    return {"success": True}
-
-# --- GENERATION ENDPOINTS (your existing logic) ---
+# --- GENERATION ENDPOINT (unchanged, dummy data) ---
 
 def parse_sw_package_version(sw_version):
     if not sw_version:
