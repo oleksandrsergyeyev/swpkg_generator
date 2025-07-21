@@ -293,7 +293,21 @@ function App() {
                 }}>
                   <h4 style={{ margin: 0, marginBottom: 12, color: "#755610" }}>Source References</h4>
                   {editProfile.source_references.map((ref, idx) => (
-                    <div key={idx} style={{ border: "1px solid #ddd", margin: 8, padding: 10, borderRadius: 8, background: "#fff" }}>
+                    <div key={idx} style={{ border: "1px solid #ddd", margin: 8, padding: 10, borderRadius: 8, background: "#fff", position: "relative" }}>
+                      {/* Remove Source Reference button */}
+                      <button
+                        type="button"
+                        style={{
+                          position: "absolute", top: 10, right: 10, color: "red",
+                          background: "transparent", border: "none", fontWeight: "bold"
+                        }}
+                        onClick={() => {
+                          const refs = [...editProfile.source_references];
+                          refs.splice(idx, 1);
+                          setEditProfile(p => ({ ...p, source_references: refs }));
+                        }}
+                        title="Remove this Source Reference"
+                      >Remove Source</button>
                       <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
                         <input
                           value={ref.name}
@@ -420,6 +434,7 @@ function App() {
                     }]
                   }))}>Add Source Reference</button>
                 </div>
+
 
                 {/* -------- SWAD -------- */}
                 <div style={{
