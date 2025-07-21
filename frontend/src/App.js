@@ -566,7 +566,40 @@ function App() {
                 }}>
                   <h4 style={{ margin: 0, marginBottom: 12, color: "#7d3557" }}>Artifacts</h4>
                   {editProfile.artifacts.map((art, idx) => (
-                    <div key={idx} style={{ border: "1px solid #bbb", margin: 5, padding: 10, borderRadius: 8, background: "#fff", display: "flex", alignItems: "center" }}>
+                    <div
+                      key={idx}
+                      style={{
+                        border: "1px solid #bbb",
+                        margin: 5,
+                        padding: 10,
+                        borderRadius: 8,
+                        background: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        position: "relative"
+                      }}
+                    >
+                      {/* Remove Artifact Button */}
+                      <button
+                        type="button"
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          color: "red",
+                          background: "transparent",
+                          border: "none",
+                          fontWeight: "bold"
+                        }}
+                        onClick={() => {
+                          const arr = [...editProfile.artifacts];
+                          arr.splice(idx, 1);
+                          setEditProfile(p => ({ ...p, artifacts: arr }));
+                        }}
+                        title="Remove this Artifact"
+                      >
+                        Remove
+                      </button>
                       <label>Name:</label>
                       <select
                         value={art.name}
@@ -594,20 +627,29 @@ function App() {
                       />
                     </div>
                   ))}
-                  <button onClick={() => setEditProfile(p => ({
-                    ...p,
-                    artifacts: [...p.artifacts, {
-                      idx: (p.artifacts?.length || 0) + 1,
-                      name: "",
-                      kind: "VBF file",
-                      version: "",
-                      location: "",
-                      sha256: "",
-                      target_platform: DEFAULT_TARGET_PLATFORM,
-                      buildtime_configurations: [{ cp: DEFAULT_CP, cpv: [DEFAULT_CPV] }],
-                      source_references_idx: []
-                    }]
-                  }))}>Add Artifact</button>
+                  <button
+                    onClick={() =>
+                      setEditProfile(p => ({
+                        ...p,
+                        artifacts: [
+                          ...p.artifacts,
+                          {
+                            idx: (p.artifacts?.length || 0) + 1,
+                            name: "",
+                            kind: "VBF file",
+                            version: "",
+                            location: "",
+                            sha256: "",
+                            target_platform: DEFAULT_TARGET_PLATFORM,
+                            buildtime_configurations: [{ cp: DEFAULT_CP, cpv: [DEFAULT_CPV] }],
+                            source_references_idx: []
+                          }
+                        ]
+                      }))
+                    }
+                  >
+                    Add Artifact
+                  </button>
                 </div>
 
                 {/* ---- SAVE / CANCEL ---- */}
@@ -615,24 +657,46 @@ function App() {
                   <button onClick={saveProfile}>Save Profile</button>
                   <button style={{ marginLeft: 12 }} onClick={cancelEditProfile}>Cancel</button>
                 </div>
+
                 {/* --- Preview panel as before --- */}
-                <div style={{
-                  width: 420,
-                  minWidth: 320,
-                  background: "#222",
-                  color: "#d7ffb8",
-                  borderRadius: 8,
-                  padding: 18,
-                  fontSize: 13,
-                  marginTop: 16
-                }}>
-                  <h4 style={{ color: "#fff" }}>Profile Preview</h4>
-                  <pre>{JSON.stringify(editProfile, null, 2)}</pre>
-                </div>
+<div
+  style={{
+    background: "#222",
+    color: "#d7ffb8",
+    borderRadius: 8,
+    marginTop: 16,
+    width: "100%",
+    maxWidth: 800,        // set to whatever fits your page
+    minWidth: 320,
+    boxSizing: "border-box",
+  }}
+>
+  <h4 style={{ color: "#fff", padding: "18px 18px 0 18px", margin: 0 }}>
+    Profile Preview
+  </h4>
+  <pre
+    style={{
+      margin: 0,
+      padding: 18,
+      background: "#222",
+      borderRadius: "0 0 8px 8px",
+      width: "100%",
+      color: "#d7ffb8",
+      fontSize: 13,
+      whiteSpace: "pre-wrap",   // Wrap lines
+      wordBreak: "break-all",   // Break long URLs/words
+      boxSizing: "border-box",
+      overflow: "visible",      // Allow to grow with content, no scroll
+    }}
+  >
+    {JSON.stringify(editProfile, null, 2)}
+  </pre>
+</div>
+
+
+
               </div>
             )}
-
-
         </div>
       )}
 
