@@ -177,32 +177,29 @@ function App() {
             <>
               <button onClick={startAddProfile}>Add Profile</button>
               <table style={{ width: "100%", marginTop: 18, borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Profile Name</th>
-                    <th>GPM Location</th>
-                    <th>SWAD count</th>
-                    <th>SWDD count</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {profiles.map((p, idx) => (
-                    <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
-                      <td>{p.sw_package_id}</td>
-                      <td>{p.profile_name}</td>
-                      <td>{p.generic_product_module.location}</td>
-                      <td>{p.swad.length}</td>
-                      <td>{p.swdd.length}</td>
-                      <td>
-                        <button onClick={() => startEditProfile(idx)}>Edit</button>
-                        <button style={{ marginLeft: 8, color: "red" }} onClick={() => setConfirmDeleteIdx(idx)}>Delete</button>
-                      </td>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "center" }}>ID</th>
+                      <th style={{ textAlign: "center" }}>Name</th>
+                      <th style={{ textAlign: "center" }}>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {profiles.map((p, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ textAlign: "center" }}>{p.sw_package_id}</td>
+                        <td style={{ textAlign: "center" }}>{p.profile_name}</td>
+                        <td style={{ textAlign: "center" }}>
+                          <button onClick={() => startEditProfile(idx)}>Edit</button>
+                          <button
+                            style={{ marginLeft: 8, color: "red" }}
+                            onClick={() => setConfirmDeleteIdx(idx)}
+                          >Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               {confirmDeleteIdx !== null && (
                 <div style={{ marginTop: 16 }}>
                   <strong>Delete profile {profiles[confirmDeleteIdx].sw_package_id}?</strong>

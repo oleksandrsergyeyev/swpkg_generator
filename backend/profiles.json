@@ -40,6 +40,7 @@
       "version": "33e3"
     },
     "source_references": [],
-    "artifacts": []
+    "artifacts": [],
+    "profile_name": "Some other package"
   }
 ]
