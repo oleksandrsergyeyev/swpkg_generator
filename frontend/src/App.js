@@ -696,78 +696,78 @@ function App() {
                       )}
 
                       {(ref.components || []).map((c, cIdx) => (
-  <div
-    key={cIdx}
-    style={{
-      background: "#f6fbff",
-      border: "1px solid #d7e8f6",
-      borderRadius: 8,
-      padding: 10,
-      marginBottom: 8,
-    }}
-  >
-    {/* 1) LOCATION (editable) + inline buttons */}
-    <div style={{ marginBottom: 10 }}>
-      <label style={{ display: "block", fontSize: 12, color: "#666" }}>location</label>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <input
-          value={c.location}
-          onChange={(e) => updateComponentField(idx, cIdx, "location", e.target.value)}
-          style={{ flex: 1 }}
-          placeholder="Link (CarWeaver/SystemWeaver)"
-        />
-        <button
-          type="button"
-          onClick={() => updateComponentFromCarWeaver(idx, cIdx)}
-          title="Fetch id/persistent_id/version from CarWeaver"
-          style={{ whiteSpace: "nowrap" }}
-        >
-          Update from CarWeaver
-        </button>
-        <button
-          type="button"
-          style={{ color: "red", whiteSpace: "nowrap" }}
-          onClick={() => removeComponent(idx, cIdx)}
-        >
-          Remove
-        </button>
-      </div>
-    </div>
+                      <div
+                        key={cIdx}
+                        style={{
+                          background: "#f6fbff",
+                          border: "1px solid #d7e8f6",
+                          borderRadius: 8,
+                          padding: 10,
+                          marginBottom: 8,
+                        }}
+                      >
+                        {/* 1) LOCATION (editable) + inline buttons */}
+                        <div style={{ marginBottom: 10 }}>
+                          <label style={{ display: "block", fontSize: 12, color: "#666" }}>location</label>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <input
+                              value={c.location}
+                              onChange={(e) => updateComponentField(idx, cIdx, "location", e.target.value)}
+                              style={{ flex: 1 }}
+                              placeholder="Link (CarWeaver/SystemWeaver)"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => updateComponentFromCarWeaver(idx, cIdx)}
+                              title="Fetch id/persistent_id/version from CarWeaver"
+                              style={{ whiteSpace: "nowrap" }}
+                            >
+                              Update from CarWeaver
+                            </button>
+                            <button
+                              type="button"
+                              style={{ color: "red", whiteSpace: "nowrap" }}
+                              onClick={() => removeComponent(idx, cIdx)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
 
-    {/* 2) ID (read-only) */}
-    <div style={{ marginBottom: 8 }}>
-      <label style={{ display: "block", fontSize: 12, color: "#666" }}>id</label>
-      <input
-        value={c.id}
-        readOnly
-        style={{ width: "100%", background: "#eee" }}
-        placeholder="(filled from CarWeaver)"
-      />
-    </div>
+                        {/* 2) ID (read-only) */}
+                        <div style={{ marginBottom: 8 }}>
+                          <label style={{ display: "block", fontSize: 12, color: "#666" }}>id</label>
+                          <input
+                            value={c.id}
+                            readOnly
+                            style={{ width: "100%", background: "#eee" }}
+                            placeholder="(filled from CarWeaver)"
+                          />
+                        </div>
 
-    {/* 3) persistent_id (read-only) */}
-    <div style={{ marginBottom: 8 }}>
-      <label style={{ display: "block", fontSize: 12, color: "#666" }}>persistent_id</label>
-      <input
-        value={c.persistent_id}
-        readOnly
-        style={{ width: "100%", background: "#eee" }}
-        placeholder="(filled from CarWeaver)"
-      />
-    </div>
+                        {/* 3) persistent_id (read-only) */}
+                        <div style={{ marginBottom: 8 }}>
+                          <label style={{ display: "block", fontSize: 12, color: "#666" }}>persistent_id</label>
+                          <input
+                            value={c.persistent_id}
+                            readOnly
+                            style={{ width: "100%", background: "#eee" }}
+                            placeholder="(filled from CarWeaver)"
+                          />
+                        </div>
 
-    {/* 4) version (read-only) */}
-    <div>
-      <label style={{ display: "block", fontSize: 12, color: "#666" }}>version</label>
-      <input
-        value={c.version}
-        readOnly
-        style={{ width: "100%", background: "#eee" }}
-        placeholder="(filled from CarWeaver)"
-      />
-    </div>
-  </div>
-))}
+                        {/* 4) version (read-only) */}
+                        <div>
+                          <label style={{ display: "block", fontSize: 12, color: "#666" }}>version</label>
+                          <input
+                            value={c.version}
+                            readOnly
+                            style={{ width: "100%", background: "#eee" }}
+                            placeholder="(filled from CarWeaver)"
+                          />
+                        </div>
+                      </div>
+                    ))}
 
                     </div>
 
