@@ -48,6 +48,16 @@ class CarWeaver:
         self.refresh_token_check()
         return requests.get(f'{self.url}/restapi/items/{item_id}', headers=self.headers)
 
+    def generic_product_module(self, item_id):
+        generic_product_module_id = 'Not found'
+        item_id = item_id.split('/')[-1]  # Ensure we have just the ID part
+        response = json.loads(self.get_item(item_id).content)
+        for i in response['attributes']:
+            if i['attributeType']['name'] == "Generic Product Module Id":
+                generic_product_module_id = (i['value'])
+                break
+        return generic_product_module_id
+
     def source_components(self, item_id):
         """Fetch source components for an item."""
         component_id = 'Not found'
