@@ -37,29 +37,45 @@ export default function GeneratePage() {
       const refs = profileNoName.source_references || [];
       const resolvedRefs = await Promise.all(
         refs.map(async (ref) => {
-          const projectName = (ref.location || "").trim();
-          let url = projectName;
-          if (projectName) {
+          // Resolve URL for the Source Reference project
+          const refProject = (ref.location || "").trim();
+          let refUrl = refProject;
+          if (refProject) {
             try {
-              const res = await getGerritTagUrl(projectName, sw_version); // { url }
-              url = res.url || projectName;
+              const res = await getGerritTagUrl(refProject, sw_version); // { url }
+              refUrl = res.url || refProject;
             } catch {
-              // If tag not found, fall back to projectName as-is
-              url = projectName;
+              refUrl = refProject; // fallback to project string
             }
           }
 
-          // clone and write resolved URL into desired places
-          const out = { ...ref, location: url };
+          // clone and write resolved URL for the ref
+          const out = { ...ref, location: refUrl };
+
+          // change_log uses the ref URL
           if (out.change_log && typeof out.change_log === "object") {
-            out.change_log = { ...out.change_log, location: url };
+            out.change_log = { ...out.change_log, location: refUrl };
           }
+
+          // additional_information: resolve each item individually (fallback to ref project)
           if (Array.isArray(out.additional_information)) {
-            out.additional_information = out.additional_information.map((ai) => ({
-              ...ai,
-              location: url,
-            }));
+            out.additional_information = await Promise.all(
+              out.additional_information.map(async (ai) => {
+                const aiProject = (ai.location || "").trim();
+                if (!aiProject) {
+                  // no AI project specified -> use refUrl
+                  return { ...ai, location: refUrl };
+                }
+                try {
+                  const r = await getGerritTagUrl(aiProject, sw_version);
+                  return { ...ai, location: r.url || aiProject };
+                } catch {
+                  return { ...ai, location: aiProject };
+                }
+              })
+            );
           }
+
           // keep components array sane
           out.components = Array.isArray(out.components) ? out.components : [];
           return out;

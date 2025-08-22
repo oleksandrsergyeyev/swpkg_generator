@@ -27,32 +27,16 @@
             "category": "design",
             "kind": "Simulink",
             "content_type": "application/model",
-            "location": ""
+            "location": "SWComponents/SharedServices"
           },
           {
             "title": "SumModMgr",
             "category": "design",
             "kind": "Generated Code",
             "content_type": "application/source code",
-            "location": ""
+            "location": "GenData/SimulinkFunc"
           }
         ],
-        "regulatory_requirements": [
-          "N/A"
-        ],
-        "change_log": {
-          "filenamn": "Gerrit log",
-          "version": "",
-          "location": ""
-        }
-      },
-      {
-        "idx": 2,
-        "name": "1111",
-        "version": "",
-        "location": "",
-        "components": [],
-        "additional_information": [],
         "regulatory_requirements": [
           "N/A"
         ],

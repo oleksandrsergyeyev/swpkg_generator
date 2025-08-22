@@ -523,14 +523,24 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                     </select>
                   </div>
                   <div style={{ marginBottom: 6 }}>
-                      <label style={{ display: "block", fontSize: 12, color: "#666" }}>location</label>
-                      <input
-                        value={info.location || "(resolved at generation)"}
-                        readOnly
-                        style={{ width: 600, background: "#eee" }}
-                        title="This URL is auto-generated from the Gerrit project & tag during Generate"
+                      <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                        gerrit project name (optional)
+                      </label>
+                      <textarea
+                        value={info.location}
+                        onChange={(e) => {
+                          const refs = [...editProfile.source_references];
+                          refs[idx].additional_information[infoIdx].location = e.target.value;
+                          setEditProfile((p) => ({ ...p, source_references: refs }));
+                        }}
+                        style={{ width: 600, minHeight: 40, resize: "vertical" }}
+                        placeholder="GenData/SimulinkFunc (leave empty to use the Source Reference project)"
                       />
+                      <div style={{ color: "#555", fontSize: 12, marginTop: 4 }}>
+                        Stored as a Gerrit <em>project name</em>. The tag URL is resolved during “Generate JSON”.
+                      </div>
                     </div>
+
 
                   <button
                     type="button"
