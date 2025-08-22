@@ -142,57 +142,50 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
           />
         </div>
 
-        {/* GPM location + Update from CarWeaver */}
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 10, gap: 8 }}>
-          <input
-            value={editProfile.generic_product_module.location}
-            onChange={(e) =>
-              setEditProfile((p) => ({
-                ...p,
-                generic_product_module: {
-                  ...p.generic_product_module,
-                  location: e.target.value,
-                },
-              }))
-            }
-            style={{ width: 480, marginRight: 10 }}
-            placeholder="Generic Product Module location (CarWeaver/SystemWeaver link)"
-          />
-          <button type="button" onClick={updateGpmFromCarWeaver}>
-            Update GPM from CarWeaver
-          </button>
+        {/* GPM: labeled, read-only id/version, each on its own line */}
+        <div style={{ marginTop: 10 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>location</label>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              value={editProfile.generic_product_module.location}
+              onChange={(e) =>
+                setEditProfile((p) => ({
+                  ...p,
+                  generic_product_module: {
+                    ...p.generic_product_module,
+                    location: e.target.value,
+                  },
+                }))
+              }
+              style={{ width: 480 }}
+              placeholder="Generic Product Module location (CarWeaver/SystemWeaver link)"
+            />
+            <button type="button" onClick={updateGpmFromCarWeaver}>
+              Update GPM from CarWeaver
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
+        <div style={{ marginTop: 10 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>id</label>
           <input
             value={editProfile.generic_product_module.id}
-            onChange={(e) =>
-              setEditProfile((p) => ({
-                ...p,
-                generic_product_module: {
-                  ...p.generic_product_module,
-                  id: e.target.value,
-                },
-              }))
-            }
-            style={{ width: 180, marginRight: 10 }}
-            placeholder="GPM id"
-          />
-          <input
-            value={editProfile.generic_product_module.version}
-            onChange={(e) =>
-              setEditProfile((p) => ({
-                ...p,
-                generic_product_module: {
-                  ...p.generic_product_module,
-                  version: e.target.value,
-                },
-              }))
-            }
-            style={{ width: 120, marginRight: 10 }}
-            placeholder="GPM version"
+            readOnly
+            style={{ width: 480, background: "#eee" }}
+            placeholder="(filled from CarWeaver)"
           />
         </div>
+
+        <div style={{ marginTop: 10 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>version</label>
+          <input
+            value={editProfile.generic_product_module.version}
+            readOnly
+            style={{ width: 180, background: "#eee" }}
+            placeholder="(filled from CarWeaver)"
+          />
+        </div>
+
       </div>
 
       {/* -------- SOURCE REFERENCES -------- */}

@@ -4,8 +4,8 @@
     "profile_name": "SWLM",
     "generic_product_module": {
       "location": "url:swap://SystemWeaver:3000/x0400000003B1D289",
-      "id": "",
-      "version": ""
+      "id": "GPM-2",
+      "version": "12"
     },
     "source_references": [
       {
