@@ -14,39 +14,46 @@ import {
 import { orderProfileForDisplay, renumberSourceReferences } from "../utils/profile";
 import {
   carWeaverGetSourceComponents,
-  carWeaverGetGenericProductModule, // <-- NEW import
+  carWeaverGetGenericProductModule,
 } from "../api/carWeaver";
 
 export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
   const { showToast } = useProfiles();
   const [editProfile, setEditProfile] = useState(() => initial ?? EMPTY_PROFILE());
+  // Loading flags for CarWeaver calls
+  const [gpmLoading, setGpmLoading] = useState(false);
+  const [compLoading, setCompLoading] = useState({}); // keys like "refIdx:compIdx" => boolean
+
 
   // ---- UPDATED: Use the new GPM endpoint
   const updateGpmFromCarWeaver = async () => {
-    try {
-      const loc = (editProfile.generic_product_module?.location || "").trim();
-      if (!loc) {
-        showToast("Set Generic Product Module location first.", "error");
-        return;
+      try {
+        const loc = (editProfile.generic_product_module?.location || "").trim();
+        if (!loc) {
+          showToast("Set Generic Product Module location first.", "error");
+          return;
+        }
+        setGpmLoading(true);
+        const data = await carWeaverGetGenericProductModule(loc); // { id, version }
+        setEditProfile((p) => ({
+          ...p,
+          generic_product_module: {
+            ...p.generic_product_module,
+            id: data.id ?? p.generic_product_module.id ?? "",
+            version:
+              data.version != null
+                ? String(data.version)
+                : p.generic_product_module.version ?? "",
+          },
+        }));
+        showToast("GPM updated from CarWeaver", "success");
+      } catch (e) {
+        showToast(`CarWeaver error: ${e.message}`, "error");
+      } finally {
+        setGpmLoading(false);
       }
-      const data = await carWeaverGetGenericProductModule(loc); // { id, version }
-      setEditProfile((p) => ({
-        ...p,
-        generic_product_module: {
-          ...p.generic_product_module,
-          id: data.id ?? p.generic_product_module.id ?? "",
-          version:
-            data.version != null
-              ? String(data.version)
-              : p.generic_product_module.version ?? "",
-          // keep location as user-defined
-        },
-      }));
-      showToast("GPM updated from CarWeaver", "success");
-    } catch (e) {
-      showToast(`CarWeaver error: ${e.message}`, "error");
-    }
-  };
+    };
+
 
   // Components operations (unchanged)
   const addComponent = (refIdx) => {
@@ -66,42 +73,67 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
     setEditProfile((p) => ({ ...p, source_references: refs }));
   };
   const updateComponentFromCarWeaver = async (refIdx, compIdx) => {
-    try {
-      const refs = [...(editProfile.source_references || [])];
-      const comp = refs[refIdx].components[compIdx];
-      const locator = (comp.location || refs[refIdx].location || "").trim();
-      if (!locator) {
-        showToast("Set a component location or source reference location first.", "error");
-        return;
+      const key = `${refIdx}:${compIdx}`;
+      try {
+        const refs = [...(editProfile.source_references || [])];
+        const comp = refs[refIdx].components[compIdx];
+        const locator = (comp.location || refs[refIdx].location || "").trim();
+        if (!locator) {
+          showToast("Set a component location or source reference location first.", "error");
+          return;
+        }
+        setCompLoading((m) => ({ ...m, [key]: true }));
+        const data = await carWeaverGetSourceComponents(locator);
+        refs[refIdx].components[compIdx] = {
+          ...comp,
+          id: data.id ?? comp.id ?? "",
+          persistent_id: data.persistent_id ?? "",
+          version: data.version != null ? String(data.version) : "",
+        };
+        setEditProfile((p) => ({ ...p, source_references: refs }));
+        showToast("Component updated from CarWeaver", "success");
+      } catch (e) {
+        showToast(`CarWeaver error: ${e.message}`, "error");
+      } finally {
+        setCompLoading((m) => ({ ...m, [key]: false }));
       }
-      const data = await carWeaverGetSourceComponents(locator);
-      refs[refIdx].components[compIdx] = {
-        ...comp,
-        id: data.id ?? comp.id ?? "",
-        persistent_id: data.persistent_id ?? "",
-        version: data.version != null ? String(data.version) : "",
-      };
-      setEditProfile((p) => ({ ...p, source_references: refs }));
-      showToast("Component updated from CarWeaver", "success");
-    } catch (e) {
-      showToast(`CarWeaver error: ${e.message}`, "error");
-    }
-  };
+    };
+
 
   const save = async () => {
     onSaved && onSaved(editProfile, editIdx);
   };
 
   return (
-    <div
-      style={{
-        marginTop: 18,
-        background: "#fff",
-        borderRadius: 12,
-        padding: 24,
-        boxShadow: "0 0 8px #eee",
-      }}
-    >
+  <div
+    style={{
+      marginTop: 18,
+      background: "#fff",
+      borderRadius: 12,
+      padding: 24,
+      boxShadow: "0 0 8px #eee",
+    }}
+  >
+    {/* Global loading banner */}
+    {(gpmLoading || Object.values(compLoading).some(Boolean)) && (
+      <div
+        style={{
+          position: "fixed",
+          top: 16,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#424242",
+          color: "#fff",
+          padding: "6px 10px",
+          borderRadius: 6,
+          zIndex: 1000,
+          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+          fontSize: 13,
+        }}
+      >
+        Contacting CarWeaver…
+      </div>
+    )}
       <h3>{editIdx === null ? "Add New Profile" : "Edit Profile"}</h3>
 
       {/* -------- BASICS BLOCK -------- */}
@@ -160,8 +192,17 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
               style={{ width: 480 }}
               placeholder="Generic Product Module location (CarWeaver/SystemWeaver link)"
             />
-            <button type="button" onClick={updateGpmFromCarWeaver}>
-              Update GPM from CarWeaver
+            <button
+              type="button"
+              onClick={updateGpmFromCarWeaver}
+              disabled={gpmLoading}
+              style={{
+                whiteSpace: "nowrap",
+                opacity: gpmLoading ? 0.6 : 1,
+                cursor: gpmLoading ? "not-allowed" : "pointer",
+              }}
+            >
+              {gpmLoading ? "Updating…" : "Update GPM from CarWeaver"}
             </button>
           </div>
         </div>
@@ -359,13 +400,19 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                         placeholder="Link (CarWeaver/SystemWeaver)"
                       />
                       <button
-                        type="button"
-                        onClick={() => updateComponentFromCarWeaver(idx, cIdx)}
-                        title="Fetch id/persistent_id/version from CarWeaver"
-                        style={{ whiteSpace: "nowrap" }}
-                      >
-                        Update from CarWeaver
-                      </button>
+                          type="button"
+                          onClick={() => updateComponentFromCarWeaver(idx, cIdx)}
+                          title="Fetch id/persistent_id/version from CarWeaver"
+                          disabled={!!compLoading[`${idx}:${cIdx}`]}
+                          style={{
+                            whiteSpace: "nowrap",
+                            opacity: compLoading[`${idx}:${cIdx}`] ? 0.6 : 1,
+                            cursor: compLoading[`${idx}:${cIdx}`] ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          {compLoading[`${idx}:${cIdx}`] ? "Updating…" : "Update from CarWeaver"}
+                        </button>
+
                       <button
                         type="button"
                         style={{ color: "red", whiteSpace: "nowrap" }}
