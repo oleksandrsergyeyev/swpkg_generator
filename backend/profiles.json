@@ -48,7 +48,7 @@
       },
       {
         "idx": 2,
-        "name": "",
+        "name": "1111",
         "version": "",
         "location": "",
         "components": [],
@@ -70,7 +70,13 @@
         "location": "https://gitlab.cm.volvocars.biz/CSA/hp-platform-sw-design/-/blob/master/suspension/ReadMe.md"
       }
     ],
-    "swdd": [],
+    "swdd": [
+      {
+        "id": "",
+        "name": "",
+        "location": ""
+      }
+    ],
     "artifacts": []
   }
 ]
