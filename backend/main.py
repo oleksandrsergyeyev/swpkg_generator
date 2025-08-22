@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from carweaver_client import CarWeaver
 import json
@@ -25,19 +25,79 @@ def save_profiles(profiles):
     with open(PROFILE_FILE, "w", encoding="utf-8") as f:
         json.dump(profiles, f, indent=2, ensure_ascii=False)
 
-# --- PROFILE API ENDPOINTS ---
+def _index_by_id(profiles, sw_package_id):
+    for i, p in enumerate(profiles):
+        if str(p.get("sw_package_id")) == str(sw_package_id):
+            return i
+    return -1
+
+# --- PROFILE API ENDPOINTS (CRUD) ---
 
 @app.get("/api/profiles")
 def get_profiles():
     return load_profiles()
 
 @app.post("/api/profiles")
-async def set_profiles(request: Request):
-    profiles = await request.json()
-    save_profiles(profiles)
-    return {"success": True}
+async def create_or_replace_profiles(request: Request):
+    """
+    Accepts EITHER:
+      - a single profile object  -> upsert that one
+      - a list of profiles       -> replace all (back-compat with older UI)
+    """
+    body = await request.json()
+    # If body is a list, replace entire set (legacy behavior)
+    if isinstance(body, list):
+        save_profiles(body)
+        return {"success": True, "mode": "replaced_all"}
 
-# --- GENERATION ENDPOINT (unchanged, dummy data) ---
+    # Else treat as single profile upsert
+    profile = body
+    if "sw_package_id" not in profile:
+        raise HTTPException(status_code=400, detail="sw_package_id is required")
+
+    profiles = load_profiles()
+    idx = _index_by_id(profiles, profile["sw_package_id"])
+    if idx >= 0:
+        profiles[idx] = profile
+        save_profiles(profiles)
+        return {"success": True, "mode": "updated"}
+    else:
+        profiles.append(profile)
+        save_profiles(profiles)
+        return {"success": True, "mode": "created"}
+
+@app.put("/api/profiles/{sw_package_id}")
+async def update_profile(sw_package_id: str, request: Request):
+    """
+    Updates (or creates) a single profile by sw_package_id.
+    """
+    incoming = await request.json()
+    if "sw_package_id" not in incoming:
+        # normalize type to match your frontend (numbers allowed)
+        incoming["sw_package_id"] = int(sw_package_id) if sw_package_id.isdigit() else sw_package_id
+
+    profiles = load_profiles()
+    idx = _index_by_id(profiles, sw_package_id)
+    if idx >= 0:
+        profiles[idx] = incoming
+        save_profiles(profiles)
+        return {"success": True, "mode": "updated"}
+    else:
+        profiles.append(incoming)
+        save_profiles(profiles)
+        return {"success": True, "mode": "created"}
+
+@app.delete("/api/profiles/{sw_package_id}")
+def delete_profile(sw_package_id: str):
+    profiles = load_profiles()
+    idx = _index_by_id(profiles, sw_package_id)
+    if idx < 0:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    profiles.pop(idx)
+    save_profiles(profiles)
+    return {"success": True, "mode": "deleted"}
+
+# --- GENERATION ENDPOINT (dummy data) ---
 
 def parse_sw_package_version(sw_version):
     if not sw_version:
@@ -203,7 +263,8 @@ async def generate(data: dict):
 def root():
     return {"msg": "Backend running. POST to /api/generate with sw_package_id and sw_version (like 'BSW_VCC_20.0.1')."}
 
-# add to your FastAPI app
+# --- CARWEAVER BRIDGE ENDPOINTS ---
+
 @app.get("/api/carweaver/items/{item_id}")
 def get_carweaver_item(item_id: str):
     cw = CarWeaver()
@@ -219,7 +280,10 @@ def get_carweaver_item(item_id: str):
 
 @app.get("/api/carweaver/source_components/{item_id:path}")
 def get_source_components(item_id: str):
+    """
+    Accepts either a plain item id (e.g., x040000000302858D) or a full SystemWeaver URL like:
+    'swap://SystemWeaver:3000/x040000000302858D' or 'url:swap://SystemWeaver:3000/x040...'
+    """
     cw = CarWeaver()
     cid, pid, ver = cw.source_components(item_id)
     return {"id": cid, "persistent_id": pid, "version": ver}
-

@@ -1,14 +1,7 @@
 [
   {
     "sw_package_id": 175,
-    "swad": [
-      {
-        "id": "2470c472247fec08a3c12c20829070745f20cc4d",
-        "name": "SWAD suspension",
-        "location": "https://gitlab.cm.volvocars.biz/CSA/hp-platform-sw-design/-/blob/master/suspension/ReadMe.md"
-      }
-    ],
-    "swdd": [],
+    "profile_name": "SWLM",
     "generic_product_module": {
       "location": "url:swap://SystemWeaver:3000/x0400000003B1D289",
       "id": "GPM-2",
@@ -20,7 +13,14 @@
         "name": "Air Suspension Controller",
         "version": "",
         "location": "https://bc-function-sw-gerrit.volvocars.biz/plugins/gitiles/SWComponents/LevelingControl/+/refs/tags/BSW_VCC_20.0.1",
-        "components": [],
+        "components": [
+          {
+            "id": "C-9872",
+            "persistent_id": "C-23434",
+            "version": "18",
+            "location": "url:swap://SystemWeaver:3000/x040000000302858D"
+          }
+        ],
         "additional_information": [
           {
             "title": "SumModMgr",
@@ -63,7 +63,14 @@
         }
       }
     ],
-    "artifacts": [],
-    "profile_name": "SWLM"
+    "swad": [
+      {
+        "id": "2470c472247fec08a3c12c20829070745f20cc4d",
+        "name": "SWAD suspension",
+        "location": "https://gitlab.cm.volvocars.biz/CSA/hp-platform-sw-design/-/blob/master/suspension/ReadMe.md"
+      }
+    ],
+    "swdd": [],
+    "artifacts": []
   }
 ]
