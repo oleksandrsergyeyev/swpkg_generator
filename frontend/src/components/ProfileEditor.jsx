@@ -327,39 +327,28 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
             </div>
 
             {/* Gerrit Project Name (store project only; URL resolved at generation) */}
-<div style={{ marginBottom: 10 }}>
-  <label style={{ display: "block", fontSize: 12, color: "#666" }}>
-    gerrit project name
-  </label>
-  <textarea
-    value={ref.location}
-    onChange={(e) => {
-      const arr = [...editProfile.source_references];
-      arr[idx].location = e.target.value;
-      setEditProfile((p) => ({ ...p, source_references: arr }));
-    }}
-    style={{
-      width: 600,
-      minHeight: 45,
-      resize: "vertical",
-    }}
-    placeholder="GenData/SimulinkFunc"
-  />
-  <div style={{ color: "#555", fontSize: 13, marginTop: 4 }}>
-    Store the Gerrit <em>project name</em> only. The tag URL is generated during “Generate JSON”.
-  </div>
-</div>
-
-
-            {/* Version (read-only) */}
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-              <input
-                value={ref.version}
-                readOnly
-                style={{ background: "#eee", width: 180, marginRight: 10 }}
-                placeholder="Will be filled at generation"
-              />
-            </div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                    gerrit project name
+                  </label>
+                  <textarea
+                    value={ref.location}
+                    onChange={(e) => {
+                      const arr = [...editProfile.source_references];
+                      arr[idx].location = e.target.value;
+                      setEditProfile((p) => ({ ...p, source_references: arr }));
+                    }}
+                    style={{
+                      width: 600,
+                      minHeight: 45,
+                      resize: "vertical",
+                    }}
+                    placeholder="GenData/SimulinkFunc"
+                  />
+                  <div style={{ color: "#555", fontSize: 13, marginTop: 4 }}>
+                    Store the Gerrit <em>project name</em> only. The full URL will be generated during “Generate JSON”.
+                  </div>
+                </div>
 
             {/* Components */}
             <div
