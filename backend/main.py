@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from carweaver_client import CarWeaver
 import json
 import os
 
@@ -201,3 +202,24 @@ async def generate(data: dict):
 @app.get("/")
 def root():
     return {"msg": "Backend running. POST to /api/generate with sw_package_id and sw_version (like 'BSW_VCC_20.0.1')."}
+
+# add to your FastAPI app
+@app.get("/api/carweaver/items/{item_id}")
+def get_carweaver_item(item_id: str):
+    cw = CarWeaver()
+    r = cw.get_item(item_id)
+    r.raise_for_status()
+    data = r.json()
+    # map backend fields into the ones the UI expects:
+    return {
+        "id": data.get("id") or item_id,
+        "persistent_id": data.get("persistent_id") or data.get("persistentId") or "",
+        "version": str(data.get("version") or data.get("Version") or ""),
+    }
+
+@app.get("/api/carweaver/source_components/{item_id:path}")
+def get_source_components(item_id: str):
+    cw = CarWeaver()
+    cid, pid, ver = cw.source_components(item_id)
+    return {"id": cid, "persistent_id": pid, "version": ver}
+

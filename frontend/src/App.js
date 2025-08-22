@@ -21,7 +21,11 @@ const EMPTY_PROFILE = () => ({
   artifacts: [],
 });
 
-// Order helper for the Profile Preview
+// --- helpers ---
+function renumberSourceReferences(refs = []) {
+  return (refs || []).map((r, i) => ({ ...r, idx: i + 1 }));
+}
+
 function orderProfileForDisplay(p = {}) {
   return {
     sw_package_id: p.sw_package_id ?? "",
@@ -51,7 +55,7 @@ function orderGeneratedForDisplay(obj = {}) {
     swad,
     swdd,
     artifacts,
-    sw_version, // not part of the backend schema, but included in UI result
+    sw_version,
     ...rest
   } = obj;
 
@@ -67,7 +71,6 @@ function orderGeneratedForDisplay(obj = {}) {
     ...(sw_version !== undefined && { sw_version }),
   };
 
-  // Keep any other fields (if present) at the end to avoid accidental drops
   return { ...ordered, ...rest };
 }
 
@@ -98,6 +101,22 @@ async function deleteProfileRequest(sw_package_id) {
   });
 }
 
+// ---- NEW: CarWeaver call for source_components ----
+// Expects backend route: GET /api/carweaver/source_components/{itemId}
+// Returns: { id, persistent_id, version }
+async function carWeaverGetSourceComponents(itemId) {
+  const res = await fetch(
+    `http://localhost:8000/api/carweaver/source_components/${encodeURIComponent(
+      itemId
+    )}`
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `CarWeaver fetch failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 function App() {
   // State for all profiles
   const [profiles, setProfiles] = useState([]);
@@ -111,6 +130,13 @@ function App() {
   const [generationInput, setGenerationInput] = useState({ sw_version: "" });
   const [generatedJSON, setGeneratedJSON] = useState(null);
 
+  // simple toast
+  const [toast, setToast] = useState(null);
+  function showToast(msg, type = "info") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  }
+
   // Load profiles from backend when the app starts
   useEffect(() => {
     fetchProfiles().then(setProfiles);
@@ -123,16 +149,20 @@ function App() {
   };
 
   const startEditProfile = (idx) => {
+    const p = profiles[idx];
     setProfileEditIdx(idx);
     setEditProfile({
-      ...profiles[idx],
-      swad: [...profiles[idx].swad],
-      swdd: [...profiles[idx].swdd],
-      source_references: (profiles[idx].source_references || []).map((sr) => ({
-        ...sr,
-        additional_information: [...(sr.additional_information || [])],
-      })),
-      artifacts: [...profiles[idx].artifacts],
+      ...p,
+      swad: [...(p.swad || [])],
+      swdd: [...(p.swdd || [])],
+      source_references: renumberSourceReferences(
+        (p.source_references || []).map((sr) => ({
+          ...sr,
+          components: Array.isArray(sr.components) ? [...sr.components] : [],
+          additional_information: [...(sr.additional_information || [])],
+        }))
+      ),
+      artifacts: [...(p.artifacts || [])],
     });
   };
 
@@ -149,10 +179,16 @@ function App() {
     let arr = [...profiles];
     const numericId = Number(editProfile.sw_package_id);
 
-    // Keep the edit object ordered in storage too (optional but tidy)
+    // Ensure idxs are tidy before saving
     const toSave = orderProfileForDisplay({
       ...editProfile,
       sw_package_id: numericId,
+      source_references: renumberSourceReferences(
+        (editProfile.source_references || []).map((sr) => ({
+          ...sr,
+          components: Array.isArray(sr.components) ? sr.components : [],
+        }))
+      ),
     });
 
     if (profileEditIdx === null) {
@@ -166,6 +202,7 @@ function App() {
     setEditProfile(null);
     setProfileEditIdx(null);
     setSelectedProfileIdx(arr.length - 1);
+    showToast("Profile saved", "success");
   };
 
   const deleteProfile = async (idx) => {
@@ -176,6 +213,7 @@ function App() {
     setProfiles(arr);
     setConfirmDeleteIdx(null);
     setSelectedProfileIdx(0);
+    showToast("Profile deleted", "success");
   };
 
   // JSON Generation helpers
@@ -209,13 +247,74 @@ function App() {
 
     const result = {
       ...profileNoName,
+      // keep source ref idx tidy in output too
+      source_references: renumberSourceReferences(
+        (profileNoName.source_references || []).map((sr) => ({
+          ...sr,
+          components: Array.isArray(sr.components) ? sr.components : [],
+        }))
+      ),
       sw_package_version,
       sw_version,
     };
 
-    // Keep display order consistent for readability
     setGeneratedJSON(orderGeneratedForDisplay(result));
   };
+
+  // Components operations
+  const addComponent = (refIdx) => {
+    const refs = [...(editProfile.source_references || [])];
+    refs[refIdx].components = refs[refIdx].components || [];
+    refs[refIdx].components.push({
+      id: "",
+      persistent_id: "",
+      version: "",
+      location: "",
+    });
+    setEditProfile((p) => ({ ...p, source_references: refs }));
+  };
+
+  const removeComponent = (refIdx, compIdx) => {
+    const refs = [...(editProfile.source_references || [])];
+    refs[refIdx].components.splice(compIdx, 1);
+    setEditProfile((p) => ({ ...p, source_references: refs }));
+  };
+
+  const updateComponentField = (refIdx, compIdx, field, value) => {
+    const refs = [...(editProfile.source_references || [])];
+    refs[refIdx].components[compIdx][field] = value;
+    setEditProfile((p) => ({ ...p, source_references: refs }));
+  };
+
+  // --- UPDATED: Use source_components endpoint and fill id/persistent_id/version
+  const updateComponentFromCarWeaver = async (refIdx, compIdx) => {
+      try {
+        const refs = [...(editProfile.source_references || [])];
+        const comp = refs[refIdx].components[compIdx];
+
+        // Use component.location first; fall back to the source reference location
+        const locator = (comp.location || refs[refIdx].location || "").trim();
+        if (!locator) {
+          showToast("Set a component location or source reference location first.", "error");
+          return;
+        }
+
+        const data = await carWeaverGetSourceComponents(locator);
+        refs[refIdx].components[compIdx] = {
+          ...comp,
+          id: data.id ?? comp.id ?? "",
+          persistent_id: data.persistent_id ?? "",
+          version: data.version != null ? String(data.version) : "",
+          // keep location as user-defined (do not overwrite)
+        };
+
+        setEditProfile((p) => ({ ...p, source_references: refs }));
+        showToast("Component updated from CarWeaver", "success");
+      } catch (e) {
+        showToast(`CarWeaver error: ${e.message}`, "error");
+      }
+    };
+
 
   // ----- UI -----
   return (
@@ -226,6 +325,30 @@ function App() {
         background: "#f6f6f6",
       }}
     >
+      {/* toast */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            top: 16,
+            right: 16,
+            background:
+              toast.type === "success"
+                ? "#2e7d32"
+                : toast.type === "error"
+                ? "#c62828"
+                : "#424242",
+            color: "white",
+            padding: "10px 14px",
+            borderRadius: 8,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+            zIndex: 1000,
+          }}
+        >
+          {toast.msg}
+        </div>
+      )}
+
       {/* Tabs */}
       <div
         style={{
@@ -368,9 +491,6 @@ function App() {
                     style={{ width: 120, marginRight: 10 }}
                     disabled={profileEditIdx !== null}
                   />
-                  <span style={{ color: "#555", fontSize: 13 }}>
-                    Unique SW Package ID (numeric)
-                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
                   <input
@@ -380,9 +500,6 @@ function App() {
                     }
                     style={{ width: 260, marginRight: 10 }}
                   />
-                  <span style={{ color: "#555", fontSize: 13 }}>
-                    Profile Name (your label)
-                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
                   <input
@@ -398,9 +515,6 @@ function App() {
                     }
                     style={{ width: 480, marginRight: 10 }}
                   />
-                  <span style={{ color: "#555", fontSize: 13 }}>
-                    GPM Location (CarWeaver URL)
-                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
                   <input
@@ -416,9 +530,6 @@ function App() {
                     }
                     style={{ width: 120, marginRight: 10 }}
                   />
-                  <span style={{ color: "#555", fontSize: 13 }}>
-                    GPM ID (from SystemWeaver)
-                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
                   <input
@@ -434,9 +545,6 @@ function App() {
                     }
                     style={{ width: 80, marginRight: 10 }}
                   />
-                  <span style={{ color: "#555", fontSize: 13 }}>
-                    GPM Version (from SystemWeaver)
-                  </span>
                 </div>
               </div>
 
@@ -465,6 +573,25 @@ function App() {
                       position: "relative",
                     }}
                   >
+                    {/* Read-only ID */}
+                    <div style={{ position: "absolute", left: 10, top: 8 }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "2px 8px",
+                          borderRadius: 12,
+                          border: "1px solid #c9a94a",
+                          fontSize: 12,
+                          background: "#fff8e1",
+                          color: "#6b5208",
+                          fontWeight: 600,
+                        }}
+                        title="Source Reference ID"
+                      >
+                        ID: {ref.idx}
+                      </span>
+                    </div>
+
                     {/* Remove Source Reference button */}
                     <button
                       type="button"
@@ -478,28 +605,46 @@ function App() {
                         fontWeight: "bold",
                       }}
                       onClick={() => {
-                        const refs = [...editProfile.source_references];
+                        const refs = [...(editProfile.source_references || [])];
                         refs.splice(idx, 1);
-                        setEditProfile((p) => ({ ...p, source_references: refs }));
+                        const renumbered = renumberSourceReferences(refs);
+                        setEditProfile((p) => ({
+                          ...p,
+                          source_references: renumbered,
+                        }));
                       }}
                       title="Remove this Source Reference"
                     >
                       Remove Source
                     </button>
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
+
+                    {/* Name */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        marginTop: 28,
+                        marginBottom: 10,
+                      }}
+                    >
                       <input
                         value={ref.name}
                         onChange={(e) => {
                           const arr = [...editProfile.source_references];
                           arr[idx].name = e.target.value;
-                          setEditProfile((p) => ({ ...p, source_references: arr }));
+                          setEditProfile((p) => ({
+                            ...p,
+                            source_references: arr,
+                          }));
                         }}
                         style={{ width: 280, marginRight: 10 }}
                       />
                       <span style={{ color: "#555", fontSize: 13 }}>
-                        Source Name (from SystemWeaver)
+                        Source Name
                       </span>
                     </div>
+
+                    {/* Location */}
                     <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
                       <textarea
                         value={ref.location}
@@ -517,6 +662,8 @@ function App() {
                       />
                       <span style={{ color: "#555", fontSize: 13 }}>Gerrit Link</span>
                     </div>
+
+                    {/* Version (read-only) */}
                     <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
                       <input
                         value={ref.version}
@@ -524,9 +671,122 @@ function App() {
                         style={{ background: "#eee", width: 180, marginRight: 10 }}
                         placeholder="Will be filled at generation"
                       />
-                      <span style={{ color: "#555", fontSize: 13 }}>
-                        Version (from SW input at generation)
-                      </span>
+                    </div>
+
+                    {/* --- Components table (id read-only; buttons inline) --- */}
+                    <div
+                      style={{
+                        marginTop: 12,
+                        marginBottom: 10,
+                        borderTop: "1px dashed #ddd",
+                        paddingTop: 10,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                        <strong style={{ marginRight: 8 }}>Components</strong>
+                        <button type="button" onClick={() => addComponent(idx)}>
+                          + Add Component
+                        </button>
+                      </div>
+
+                      {(ref.components || []).length === 0 && (
+                        <div style={{ color: "#777", fontSize: 13, marginBottom: 8 }}>
+                          No components yet. Add one to start.
+                        </div>
+                      )}
+
+                      {(ref.components || []).map((c, cIdx) => (
+                        <div
+                          key={cIdx}
+                          style={{
+                            background: "#f6fbff",
+                            border: "1px solid #d7e8f6",
+                            borderRadius: 8,
+                            padding: 10,
+                            marginBottom: 8,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "150px 180px 150px 1fr auto auto",
+                              gap: 8,
+                              alignItems: "center",
+                            }}
+                          >
+                            {/* id (READ-ONLY) */}
+                            <div>
+                              <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                                id
+                              </label>
+                              <input
+                                value={c.id}
+                                readOnly
+                                style={{ width: "100%", background: "#eee" }}
+                                placeholder="(filled from CarWeaver)"
+                              />
+                            </div>
+
+                            {/* persistent_id (read-only) */}
+                            <div>
+                              <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                                persistent_id
+                              </label>
+                              <input
+                                value={c.persistent_id}
+                                readOnly
+                                style={{ width: "100%", background: "#eee" }}
+                                placeholder="(filled from CarWeaver)"
+                              />
+                            </div>
+
+                            {/* version (read-only) */}
+                            <div>
+                              <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                                version
+                              </label>
+                              <input
+                                value={c.version}
+                                readOnly
+                                style={{ width: "100%", background: "#eee" }}
+                                placeholder="(filled from CarWeaver)"
+                              />
+                            </div>
+
+                            {/* location (editable) */}
+                            <div>
+                              <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                                location
+                              </label>
+                              <input
+                                value={c.location}
+                                onChange={(e) =>
+                                  updateComponentField(idx, cIdx, "location", e.target.value)
+                                }
+                                style={{ width: "100%" }}
+                                placeholder="Link (CarWeaver/SystemWeaver)"
+                              />
+                            </div>
+
+                            {/* inline buttons */}
+                            <button
+                              type="button"
+                              onClick={() => updateComponentFromCarWeaver(idx, cIdx)}
+                              title="Fetch id/persistent_id/version from CarWeaver"
+                              style={{ whiteSpace: "nowrap" }}
+                            >
+                              Update from CarWeaver
+                            </button>
+                            <button
+                              type="button"
+                              style={{ color: "red", whiteSpace: "nowrap" }}
+                              onClick={() => removeComponent(idx, cIdx)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Additional Information */}
@@ -548,12 +808,12 @@ function App() {
                               value={info.title}
                               onChange={(e) => {
                                 const refs = [...editProfile.source_references];
-                                refs[idx].additional_information[infoIdx].title = e.target.value;
+                                refs[idx].additional_information[infoIdx].title =
+                                  e.target.value;
                                 setEditProfile((p) => ({ ...p, source_references: refs }));
                               }}
                               style={{ width: 180, marginRight: 8 }}
                             />
-                            <span style={{ color: "#888", fontSize: 13 }}>Title</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
                             <input
@@ -561,12 +821,12 @@ function App() {
                               value={info.category}
                               onChange={(e) => {
                                 const refs = [...editProfile.source_references];
-                                refs[idx].additional_information[infoIdx].category = e.target.value;
+                                refs[idx].additional_information[infoIdx].category =
+                                  e.target.value;
                                 setEditProfile((p) => ({ ...p, source_references: refs }));
                               }}
                               style={{ width: 120, marginRight: 8 }}
                             />
-                            <span style={{ color: "#888", fontSize: 13 }}>Category</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
                             <select
@@ -581,7 +841,6 @@ function App() {
                               <option value="Simulink">Simulink</option>
                               <option value="Generated Code">Generated Code</option>
                             </select>
-                            <span style={{ color: "#888", fontSize: 13 }}>Kind</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
                             <select
@@ -597,7 +856,6 @@ function App() {
                               <option value="application/model">application/model</option>
                               <option value="application/source code">application/source code</option>
                             </select>
-                            <span style={{ color: "#888", fontSize: 13 }}>Content Type</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
                             <textarea
@@ -605,7 +863,8 @@ function App() {
                               value={info.location}
                               onChange={(e) => {
                                 const refs = [...editProfile.source_references];
-                                refs[idx].additional_information[infoIdx].location = e.target.value;
+                                refs[idx].additional_information[infoIdx].location =
+                                  e.target.value;
                                 setEditProfile((p) => ({ ...p, source_references: refs }));
                               }}
                               style={{
@@ -615,9 +874,6 @@ function App() {
                                 resize: "vertical",
                               }}
                             />
-                            <span style={{ color: "#888", fontSize: 13 }}>
-                              Location (link to model or code)
-                            </span>
                           </div>
                           <button
                             type="button"
@@ -640,7 +896,7 @@ function App() {
                       <button
                         type="button"
                         onClick={() => {
-                          const refs = [...editProfile.source_references];
+                          const refs = [...(editProfile.source_references || [])];
                           refs[idx].additional_information =
                             refs[idx].additional_information || [];
                           refs[idx].additional_information.push({
@@ -659,28 +915,24 @@ function App() {
                   </div>
                 ))}
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    const existing = [...(editProfile.source_references || [])];
+                    const next = {
+                      idx: existing.length + 1,
+                      name: "",
+                      version: "",
+                      location: "",
+                      components: [],
+                      additional_information: [],
+                      regulatory_requirements: [DEFAULT_REG_REQ],
+                      change_log: { filenamn: DEFAULT_FILENAMN, version: "", location: "" },
+                    };
+                    const renumbered = renumberSourceReferences([...existing, next]);
                     setEditProfile((p) => ({
                       ...p,
-                      source_references: [
-                        ...(p.source_references || []),
-                        {
-                          idx: (p.source_references?.length || 0) + 1,
-                          name: "",
-                          version: "",
-                          location: "",
-                          components: [],
-                          additional_information: [],
-                          regulatory_requirements: [DEFAULT_REG_REQ],
-                          change_log: {
-                            filenamn: DEFAULT_FILENAMN,
-                            version: "",
-                            location: "",
-                          },
-                        },
-                      ],
-                    }))
-                  }
+                      source_references: renumbered,
+                    }));
+                  }}
                 >
                   Add Source Reference
                 </button>
@@ -718,7 +970,6 @@ function App() {
                         }}
                         style={{ width: 120, marginRight: 8 }}
                       />
-                      <span style={{ color: "#555", fontSize: 13 }}>Manual ID for SWAD</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
                       <input
@@ -731,7 +982,6 @@ function App() {
                         }}
                         style={{ width: 200, marginRight: 8 }}
                       />
-                      <span style={{ color: "#555", fontSize: 13 }}>SWAD Name</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
                       <textarea
@@ -749,7 +999,6 @@ function App() {
                           resize: "vertical",
                         }}
                       />
-                      <span style={{ color: "#555", fontSize: 13 }}>SWAD Documentation/Link</span>
                       <button
                         type="button"
                         style={{ color: "red", marginLeft: 12 }}
@@ -809,7 +1058,6 @@ function App() {
                         }}
                         style={{ width: 120, marginRight: 8 }}
                       />
-                      <span style={{ color: "#555", fontSize: 13 }}>Manual ID for SWDD</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
                       <input
@@ -822,7 +1070,6 @@ function App() {
                         }}
                         style={{ width: 200, marginRight: 8 }}
                       />
-                      <span style={{ color: "#555", fontSize: 13 }}>SWDD Name</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
                       <textarea
@@ -831,7 +1078,7 @@ function App() {
                         onChange={(e) => {
                           const arr = [...editProfile.swdd];
                           arr[idx].location = e.target.value;
-                          setEditProfile((p) => ({ ...p, swdd: arr }));
+                          setEditProfile((p) => ({ ...p, swdd: arr }))
                         }}
                         style={{
                           width: 600,
@@ -840,7 +1087,6 @@ function App() {
                           resize: "vertical",
                         }}
                       />
-                      <span style={{ color: "#555", fontSize: 13 }}>SWDD Documentation/Link</span>
                       <button
                         type="button"
                         style={{ color: "red", marginLeft: 12 }}
@@ -1095,3 +1341,4 @@ function App() {
 }
 
 export default App;
+
