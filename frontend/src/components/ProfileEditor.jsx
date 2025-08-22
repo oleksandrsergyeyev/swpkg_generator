@@ -24,6 +24,11 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
   const [gpmLoading, setGpmLoading] = useState(false);
   const [compLoading, setCompLoading] = useState({}); // keys like "refIdx:compIdx" => boolean
 
+  // --- map Kind -> Content-Type
+  const contentTypeFor = (k) =>
+    k === "Generated Code" ? "application/source code" : "application/model";
+
+
   // ---- UPDATED: Use the new GPM endpoint
   const updateGpmFromCarWeaver = async () => {
     try {
@@ -484,37 +489,33 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                   <div style={{ marginBottom: 6 }}>
                     <label style={{ display: "block", fontSize: 12, color: "#666" }}>kind</label>
                     <select
-                      value={info.kind || DEFAULT_KIND}
+                      value={info.kind || "Simulink"}
                       onChange={(e) => {
+                        const val = e.target.value;
                         const refs = [...editProfile.source_references];
-                        refs[idx].additional_information[infoIdx].kind = e.target.value;
+                        refs[idx].additional_information[infoIdx].kind = val;
+                        // keep content_type in sync with Kind
+                        refs[idx].additional_information[infoIdx].content_type = contentTypeFor(val);
                         setEditProfile((p) => ({ ...p, source_references: refs }));
                       }}
-                      style={{ width: 140 }}
+                      style={{ width: 140, marginRight: 8 }}
                     >
                       <option value="Simulink">Simulink</option>
                       <option value="Generated Code">Generated Code</option>
                     </select>
+
                   </div>
 
                   {/* Content type */}
                   <div style={{ marginBottom: 6 }}>
-                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>
-                      content_type
-                    </label>
-                    <select
-                      value={info.content_type || DEFAULT_CONTENT_TYPE}
-                      onChange={(e) => {
-                        const refs = [...editProfile.source_references];
-                        refs[idx].additional_information[infoIdx].content_type = e.target.value;
-                        setEditProfile((p) => ({ ...p, source_references: refs }));
-                      }}
-                      style={{ width: 220 }}
-                    >
-                      <option value="application/model">application/model</option>
-                      <option value="application/source code">application/source code</option>
-                    </select>
-                  </div>
+                      <label style={{ display: "block", fontSize: 12, color: "#666" }}>content_type</label>
+                      <input
+                        value={contentTypeFor(info.kind || "Simulink")}
+                        readOnly
+                        style={{ width: 220, background: "#eee" }}
+                        title="Content type follows Kind"
+                      />
+                    </div>
 
                   {/* Gerrit project name (optional) */}
                   <div style={{ marginBottom: 6 }}>
@@ -560,12 +561,13 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                   const refs = [...(editProfile.source_references || [])];
                   refs[idx].additional_information = refs[idx].additional_information || [];
                   refs[idx].additional_information.push({
-                    title: "",
-                    category: DEFAULT_CATEGORY, // usually "design"
-                    kind: DEFAULT_KIND,
-                    content_type: DEFAULT_CONTENT_TYPE,
-                    location: "",
-                  });
+                      title: "",
+                      category: DEFAULT_CATEGORY,
+                      kind: DEFAULT_KIND,
+                      content_type: contentTypeFor(DEFAULT_KIND), // ← keep in sync
+                      location: "",
+                    });
+
                   setEditProfile((p) => ({ ...p, source_references: refs }));
                 }}
               >
