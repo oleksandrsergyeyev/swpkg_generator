@@ -12,13 +12,43 @@ import {
   DEFAULT_CPV,
 } from "../utils/constants";
 import { orderProfileForDisplay, renumberSourceReferences } from "../utils/profile";
-import { carWeaverGetSourceComponents } from "../api/carWeaver";
+import {
+  carWeaverGetSourceComponents,
+  carWeaverGetGenericProductModule, // <-- NEW import
+} from "../api/carWeaver";
 
 export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
   const { showToast } = useProfiles();
   const [editProfile, setEditProfile] = useState(() => initial ?? EMPTY_PROFILE());
 
-  // Components operations
+  // ---- UPDATED: Use the new GPM endpoint
+  const updateGpmFromCarWeaver = async () => {
+    try {
+      const loc = (editProfile.generic_product_module?.location || "").trim();
+      if (!loc) {
+        showToast("Set Generic Product Module location first.", "error");
+        return;
+      }
+      const data = await carWeaverGetGenericProductModule(loc); // { id, version }
+      setEditProfile((p) => ({
+        ...p,
+        generic_product_module: {
+          ...p.generic_product_module,
+          id: data.id ?? p.generic_product_module.id ?? "",
+          version:
+            data.version != null
+              ? String(data.version)
+              : p.generic_product_module.version ?? "",
+          // keep location as user-defined
+        },
+      }));
+      showToast("GPM updated from CarWeaver", "success");
+    } catch (e) {
+      showToast(`CarWeaver error: ${e.message}`, "error");
+    }
+  };
+
+  // Components operations (unchanged)
   const addComponent = (refIdx) => {
     const refs = [...(editProfile.source_references || [])];
     refs[refIdx].components = refs[refIdx].components || [];
@@ -87,6 +117,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
         <h4 style={{ margin: 0, marginBottom: 12, color: "#274060" }}>
           Profile Basics
         </h4>
+
         <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
           <input
             value={editProfile.sw_package_id}
@@ -100,6 +131,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
             disabled={editIdx !== null}
           />
         </div>
+
         <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
           <input
             value={editProfile.profile_name}
@@ -109,7 +141,9 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
             style={{ width: 260, marginRight: 10 }}
           />
         </div>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
+
+        {/* GPM location + Update from CarWeaver */}
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 10, gap: 8 }}>
           <input
             value={editProfile.generic_product_module.location}
             onChange={(e) =>
@@ -122,8 +156,13 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
               }))
             }
             style={{ width: 480, marginRight: 10 }}
+            placeholder="Generic Product Module location (CarWeaver/SystemWeaver link)"
           />
+          <button type="button" onClick={updateGpmFromCarWeaver}>
+            Update GPM from CarWeaver
+          </button>
         </div>
+
         <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
           <input
             value={editProfile.generic_product_module.id}
@@ -136,10 +175,9 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                 },
               }))
             }
-            style={{ width: 120, marginRight: 10 }}
+            style={{ width: 180, marginRight: 10 }}
+            placeholder="GPM id"
           />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
           <input
             value={editProfile.generic_product_module.version}
             onChange={(e) =>
@@ -151,7 +189,8 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                 },
               }))
             }
-            style={{ width: 80, marginRight: 10 }}
+            style={{ width: 120, marginRight: 10 }}
+            placeholder="GPM version"
           />
         </div>
       </div>
@@ -487,7 +526,8 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                 type="button"
                 onClick={() => {
                   const refs = [...(editProfile.source_references || [])];
-                  refs[idx].additional_information = refs[idx].additional_information || [];
+                  refs[idx].additional_information =
+                    refs[idx].additional_information || [];
                   refs[idx].additional_information.push({
                     title: "",
                     category: DEFAULT_CATEGORY,

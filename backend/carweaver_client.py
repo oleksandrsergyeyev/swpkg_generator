@@ -52,11 +52,13 @@ class CarWeaver:
         generic_product_module_id = 'Not found'
         item_id = item_id.split('/')[-1]  # Ensure we have just the ID part
         response = json.loads(self.get_item(item_id).content)
+        print(json.dumps(response, indent=2))
         for i in response['attributes']:
             if i['attributeType']['name'] == "Generic Product Module Id":
                 generic_product_module_id = (i['value'])
                 break
-        return generic_product_module_id
+        version = response['versionNumber']
+        return generic_product_module_id, version
 
     def source_components(self, item_id):
         """Fetch source components for an item."""

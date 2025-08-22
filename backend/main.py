@@ -287,3 +287,14 @@ def get_source_components(item_id: str):
     cw = CarWeaver()
     cid, pid, ver = cw.source_components(item_id)
     return {"id": cid, "persistent_id": pid, "version": ver}
+
+@app.get("/api/carweaver/generic_product_module/{item_id:path}")
+def get_generic_product_module(item_id: str):
+    """
+    Accepts either a plain item id (e.g., x040000000302858D) or a full SystemWeaver URL like:
+    'swap://SystemWeaver:3000/x040000000302858D' or 'url:swap://SystemWeaver:3000/x040...'
+    """
+    cw = CarWeaver()
+    gpm, ver = cw.generic_product_module(item_id)
+    print(gpm, ver)
+    return {"id": gpm, "version": ver}
