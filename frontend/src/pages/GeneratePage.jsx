@@ -1,32 +1,82 @@
 import React, { useState } from "react";
 import { useProfiles } from "../context/ProfilesContext";
-import { fillVersionFields, renumberSourceReferences, orderGeneratedForDisplay } from "../utils/profile";
+import {
+  fillVersionFields,
+  renumberSourceReferences,
+  orderGeneratedForDisplay,
+} from "../utils/profile";
 import GeneratedJsonPanel from "../components/GeneratedJsonPanel";
+import { getGerritTagUrl } from "../api/gerrit";
 
 export default function GeneratePage() {
   const { profiles } = useProfiles();
   const [selectedProfileIdx, setSelectedProfileIdx] = useState(0);
   const [generationInput, setGenerationInput] = useState({ sw_version: "" });
   const [generated, setGenerated] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const sw_version = generationInput.sw_version;
     if (!sw_version) return;
-    const sw_package_version = sw_version.split("_").pop() + ".0";
-    const filledProfile = fillVersionFields(profiles[selectedProfileIdx], sw_version);
-    const { profile_name, ...profileNoName } = filledProfile;
-    const result = {
-      ...profileNoName,
-      source_references: renumberSourceReferences(
-        (profileNoName.source_references || []).map((sr) => ({
-          ...sr,
-          components: Array.isArray(sr.components) ? sr.components : [],
-        }))
-      ),
-      sw_package_version,
-      sw_version,
-    };
-    setGenerated(orderGeneratedForDisplay(result));
+
+    try {
+      setLoading(true);
+
+      const profile = profiles[selectedProfileIdx];
+      const sw_package_version =
+        (sw_version.includes("_") ? sw_version.split("_").pop() : sw_version) +
+        ".0";
+
+      // fill empty "version" fields with sw_version
+      const filledProfile = fillVersionFields(profile, sw_version);
+
+      // Remove profile_name in result
+      const { profile_name, ...profileNoName } = filledProfile;
+
+      // Resolve Gerrit URLs for each source reference (location holds PROJECT NAME)
+      const refs = profileNoName.source_references || [];
+      const resolvedRefs = await Promise.all(
+        refs.map(async (ref) => {
+          const projectName = (ref.location || "").trim();
+          let url = projectName;
+          if (projectName) {
+            try {
+              const res = await getGerritTagUrl(projectName, sw_version); // { url }
+              url = res.url || projectName;
+            } catch {
+              // If tag not found, fall back to projectName as-is
+              url = projectName;
+            }
+          }
+
+          // clone and write resolved URL into desired places
+          const out = { ...ref, location: url };
+          if (out.change_log && typeof out.change_log === "object") {
+            out.change_log = { ...out.change_log, location: url };
+          }
+          if (Array.isArray(out.additional_information)) {
+            out.additional_information = out.additional_information.map((ai) => ({
+              ...ai,
+              location: url,
+            }));
+          }
+          // keep components array sane
+          out.components = Array.isArray(out.components) ? out.components : [];
+          return out;
+        })
+      );
+
+      const result = {
+        ...profileNoName,
+        source_references: renumberSourceReferences(resolvedRefs),
+        sw_package_version,
+        sw_version,
+      };
+
+      setGenerated(orderGeneratedForDisplay(result));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,8 +115,9 @@ export default function GeneratePage() {
           <button
             style={{ marginLeft: 16, padding: "4px 16px" }}
             onClick={handleGenerate}
+            disabled={loading}
           >
-            Generate JSON
+            {loading ? "Generating…" : "Generate JSON"}
           </button>
         </div>
       </div>

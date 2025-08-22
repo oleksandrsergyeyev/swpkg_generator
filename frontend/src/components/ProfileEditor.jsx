@@ -326,24 +326,30 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
               </span>
             </div>
 
-            {/* Location */}
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-              <textarea
-                value={ref.location}
-                onChange={(e) => {
-                  const arr = [...editProfile.source_references];
-                  arr[idx].location = e.target.value;
-                  setEditProfile((p) => ({ ...p, source_references: arr }));
-                }}
-                style={{
-                  width: 600,
-                  minHeight: 45,
-                  marginRight: 10,
-                  resize: "vertical",
-                }}
-              />
-              <span style={{ color: "#555", fontSize: 13 }}>Gerrit Link</span>
-            </div>
+            {/* Gerrit Project Name (store project only; URL resolved at generation) */}
+<div style={{ marginBottom: 10 }}>
+  <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+    gerrit project name
+  </label>
+  <textarea
+    value={ref.location}
+    onChange={(e) => {
+      const arr = [...editProfile.source_references];
+      arr[idx].location = e.target.value;
+      setEditProfile((p) => ({ ...p, source_references: arr }));
+    }}
+    style={{
+      width: 600,
+      minHeight: 45,
+      resize: "vertical",
+    }}
+    placeholder="GenData/SimulinkFunc"
+  />
+  <div style={{ color: "#555", fontSize: 13, marginTop: 4 }}>
+    Store the Gerrit <em>project name</em> only. The tag URL is generated during “Generate JSON”.
+  </div>
+</div>
+
 
             {/* Version (read-only) */}
             <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
@@ -527,23 +533,16 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                       <option value="application/source code">application/source code</option>
                     </select>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
-                    <textarea
-                      placeholder="Location"
-                      value={info.location}
-                      onChange={(e) => {
-                        const refs = [...editProfile.source_references];
-                        refs[idx].additional_information[infoIdx].location = e.target.value;
-                        setEditProfile((p) => ({ ...p, source_references: refs }));
-                      }}
-                      style={{
-                        width: 600,
-                        minHeight: 40,
-                        marginRight: 8,
-                        resize: "vertical",
-                      }}
-                    />
-                  </div>
+                  <div style={{ marginBottom: 6 }}>
+                      <label style={{ display: "block", fontSize: 12, color: "#666" }}>location</label>
+                      <input
+                        value={info.location || "(resolved at generation)"}
+                        readOnly
+                        style={{ width: 600, background: "#eee" }}
+                        title="This URL is auto-generated from the Gerrit project & tag during Generate"
+                      />
+                    </div>
+
                   <button
                     type="button"
                     style={{

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from carweaver_client import CarWeaver
+from gerrit_client import GerritClient
 import json
 import os
 
@@ -298,3 +299,11 @@ def get_generic_product_module(item_id: str):
     gpm, ver = cw.generic_product_module(item_id)
     print(gpm, ver)
     return {"id": gpm, "version": ver}
+
+@app.get("/api/gerrit/tag_url")
+def get_gerrit_tag_url(project: str, tag: str):
+    gc = GerritClient()
+    url = gc.get_tag_url_by_exact_name(project, tag)
+    if not url:
+        raise HTTPException(status_code=404, detail="Tag URL not found")
+    return {"url": url}

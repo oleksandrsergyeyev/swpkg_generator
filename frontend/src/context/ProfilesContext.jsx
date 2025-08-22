@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import { fetchProfiles, addProfile, updateProfile, deleteProfileRequest } from "../api/profiles";
 import { EMPTY_PROFILE } from "../utils/constants";
 import { orderProfileForDisplay, renumberSourceReferences } from "../utils/profile";
+import { toProjectName } from "../utils/gerrit"; // ADD
+
 
 const ProfilesContext = createContext(null);
 
@@ -34,16 +36,35 @@ export function ProfilesProvider({ children }) {
       const numericId = Number(editProfile.sw_package_id);
 
       // Ensure idxs are tidy before saving
-      const toSave = orderProfileForDisplay({
-        ...editProfile,
-        sw_package_id: numericId,
-        source_references: renumberSourceReferences(
-          (editProfile.source_references || []).map((sr) => ({
-            ...sr,
-            components: Array.isArray(sr.components) ? sr.components : [],
-          }))
-        ),
-      });
+      // 1) Normalize Source Reference project names
+        const normalizedRefs = renumberSourceReferences(
+          (editProfile.source_references || []).map((sr) => {
+            const projectName = toProjectName(sr.location);
+            // 2) Additional info + change_log locations are generated later → clear them in storage
+            const clearedAI = Array.isArray(sr.additional_information)
+              ? sr.additional_information.map(ai => ({ ...ai, location: "" }))
+              : [];
+            const clearedCL = sr.change_log && typeof sr.change_log === "object"
+              ? { ...sr.change_log, location: "" }
+              : { filenamn: "", version: "", location: "" };
+
+            return {
+              ...sr,
+              location: projectName,            // store project name only
+              components: Array.isArray(sr.components) ? sr.components : [],
+              additional_information: clearedAI,
+              change_log: clearedCL,
+            };
+          })
+        );
+
+        // Final shape for saving
+        const toSave = orderProfileForDisplay({
+          ...editProfile,
+          sw_package_id: numericId,
+          source_references: normalizedRefs,
+        });
+
 
       if (profileEditIdx === null || profileEditIdx === undefined) {
         arr.push(toSave);

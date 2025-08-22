@@ -12,7 +12,7 @@
         "idx": 1,
         "name": "Air Suspension Controller",
         "version": "",
-        "location": "https://bc-function-sw-gerrit.volvocars.biz/plugins/gitiles/SWComponents/LevelingControl/+/refs/tags/BSW_VCC_20.0.1",
+        "location": "SWComponents/LevelingControl",
         "components": [
           {
             "id": "C-9872",
@@ -27,14 +27,14 @@
             "category": "design",
             "kind": "Simulink",
             "content_type": "application/model",
-            "location": "https://bc-function-sw-gerrit.volvocars.biz/plugins/gitiles/SWComponents/SharedServices/+/refs/tags/BSW_VCC_20.0.1/SumModMgr_SWC/"
+            "location": ""
           },
           {
             "title": "SumModMgr",
             "category": "design",
             "kind": "Generated Code",
             "content_type": "application/source code",
-            "location": "https://bc-function-sw-gerrit.volvocars.biz/plugins/gitiles/GenData/SimulinkFunc/+/refs/tags/BSW_VCC_20.0.1/SumModMgr_swc_autosar_rtw/"
+            "location": ""
           }
         ],
         "regulatory_requirements": [
