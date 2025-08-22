@@ -24,36 +24,34 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
   const [gpmLoading, setGpmLoading] = useState(false);
   const [compLoading, setCompLoading] = useState({}); // keys like "refIdx:compIdx" => boolean
 
-
   // ---- UPDATED: Use the new GPM endpoint
   const updateGpmFromCarWeaver = async () => {
-      try {
-        const loc = (editProfile.generic_product_module?.location || "").trim();
-        if (!loc) {
-          showToast("Set Generic Product Module location first.", "error");
-          return;
-        }
-        setGpmLoading(true);
-        const data = await carWeaverGetGenericProductModule(loc); // { id, version }
-        setEditProfile((p) => ({
-          ...p,
-          generic_product_module: {
-            ...p.generic_product_module,
-            id: data.id ?? p.generic_product_module.id ?? "",
-            version:
-              data.version != null
-                ? String(data.version)
-                : p.generic_product_module.version ?? "",
-          },
-        }));
-        showToast("GPM updated from CarWeaver", "success");
-      } catch (e) {
-        showToast(`CarWeaver error: ${e.message}`, "error");
-      } finally {
-        setGpmLoading(false);
+    try {
+      const loc = (editProfile.generic_product_module?.location || "").trim();
+      if (!loc) {
+        showToast("Set Generic Product Module location first.", "error");
+        return;
       }
-    };
-
+      setGpmLoading(true);
+      const data = await carWeaverGetGenericProductModule(loc); // { id, version }
+      setEditProfile((p) => ({
+        ...p,
+        generic_product_module: {
+          ...p.generic_product_module,
+          id: data.id ?? p.generic_product_module.id ?? "",
+          version:
+            data.version != null
+              ? String(data.version)
+              : p.generic_product_module.version ?? "",
+        },
+      }));
+      showToast("GPM updated from CarWeaver", "success");
+    } catch (e) {
+      showToast(`CarWeaver error: ${e.message}`, "error");
+    } finally {
+      setGpmLoading(false);
+    }
+  };
 
   // Components operations (unchanged)
   const addComponent = (refIdx) => {
@@ -73,67 +71,66 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
     setEditProfile((p) => ({ ...p, source_references: refs }));
   };
   const updateComponentFromCarWeaver = async (refIdx, compIdx) => {
-      const key = `${refIdx}:${compIdx}`;
-      try {
-        const refs = [...(editProfile.source_references || [])];
-        const comp = refs[refIdx].components[compIdx];
-        const locator = (comp.location || refs[refIdx].location || "").trim();
-        if (!locator) {
-          showToast("Set a component location or source reference location first.", "error");
-          return;
-        }
-        setCompLoading((m) => ({ ...m, [key]: true }));
-        const data = await carWeaverGetSourceComponents(locator);
-        refs[refIdx].components[compIdx] = {
-          ...comp,
-          id: data.id ?? comp.id ?? "",
-          persistent_id: data.persistent_id ?? "",
-          version: data.version != null ? String(data.version) : "",
-        };
-        setEditProfile((p) => ({ ...p, source_references: refs }));
-        showToast("Component updated from CarWeaver", "success");
-      } catch (e) {
-        showToast(`CarWeaver error: ${e.message}`, "error");
-      } finally {
-        setCompLoading((m) => ({ ...m, [key]: false }));
+    const key = `${refIdx}:${compIdx}`;
+    try {
+      const refs = [...(editProfile.source_references || [])];
+      const comp = refs[refIdx].components[compIdx];
+      const locator = (comp.location || refs[refIdx].location || "").trim();
+      if (!locator) {
+        showToast("Set a component location or source reference location first.", "error");
+        return;
       }
-    };
-
+      setCompLoading((m) => ({ ...m, [key]: true }));
+      const data = await carWeaverGetSourceComponents(locator);
+      refs[refIdx].components[compIdx] = {
+        ...comp,
+        id: data.id ?? comp.id ?? "",
+        persistent_id: data.persistent_id ?? "",
+        version: data.version != null ? String(data.version) : "",
+      };
+      setEditProfile((p) => ({ ...p, source_references: refs }));
+      showToast("Component updated from CarWeaver", "success");
+    } catch (e) {
+      showToast(`CarWeaver error: ${e.message}`, "error");
+    } finally {
+      setCompLoading((m) => ({ ...m, [key]: false }));
+    }
+  };
 
   const save = async () => {
-    onSaved && onSaved(editProfile, editIdx);
+    onSaved && onSaved(editIdx != null ? editProfile : editProfile, editIdx);
   };
 
   return (
-  <div
-    style={{
-      marginTop: 18,
-      background: "#fff",
-      borderRadius: 12,
-      padding: 24,
-      boxShadow: "0 0 8px #eee",
-    }}
-  >
-    {/* Global loading banner */}
-    {(gpmLoading || Object.values(compLoading).some(Boolean)) && (
-      <div
-        style={{
-          position: "fixed",
-          top: 16,
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "#424242",
-          color: "#fff",
-          padding: "6px 10px",
-          borderRadius: 6,
-          zIndex: 1000,
-          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-          fontSize: 13,
-        }}
-      >
-        Contacting CarWeaver…
-      </div>
-    )}
+    <div
+      style={{
+        marginTop: 18,
+        background: "#fff",
+        borderRadius: 12,
+        padding: 24,
+        boxShadow: "0 0 8px #eee",
+      }}
+    >
+      {/* Global loading banner */}
+      {(gpmLoading || Object.values(compLoading).some(Boolean)) && (
+        <div
+          style={{
+            position: "fixed",
+            top: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#424242",
+            color: "#fff",
+            padding: "6px 10px",
+            borderRadius: 6,
+            zIndex: 1000,
+            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+            fontSize: 13,
+          }}
+        >
+          Contacting CarWeaver…
+        </div>
+      )}
       <h3>{editIdx === null ? "Add New Profile" : "Edit Profile"}</h3>
 
       {/* -------- BASICS BLOCK -------- */}
@@ -146,9 +143,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
           border: "1px solid #e0e4ef",
         }}
       >
-        <h4 style={{ margin: 0, marginBottom: 12, color: "#274060" }}>
-          Profile Basics
-        </h4>
+        <h4 style={{ margin: 0, marginBottom: 12, color: "#274060" }}>Profile Basics</h4>
 
         <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
           <input
@@ -167,9 +162,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
         <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
           <input
             value={editProfile.profile_name}
-            onChange={(e) =>
-              setEditProfile((p) => ({ ...p, profile_name: e.target.value }))
-            }
+            onChange={(e) => setEditProfile((p) => ({ ...p, profile_name: e.target.value }))}
             style={{ width: 260, marginRight: 10 }}
           />
         </div>
@@ -226,7 +219,6 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
             placeholder="(filled from CarWeaver)"
           />
         </div>
-
       </div>
 
       {/* -------- SOURCE REFERENCES -------- */}
@@ -239,9 +231,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
           border: "1px solid #eee",
         }}
       >
-        <h4 style={{ margin: 0, marginBottom: 12, color: "#755610" }}>
-          Source References
-        </h4>
+        <h4 style={{ margin: 0, marginBottom: 12, color: "#755610" }}>Source References</h4>
 
         {(editProfile.source_references || []).map((ref, idx) => (
           <div
@@ -321,34 +311,32 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                 }}
                 style={{ width: 280, marginRight: 10 }}
               />
-              <span style={{ color: "#555", fontSize: 13 }}>
-                Source Name
-              </span>
+              <span style={{ color: "#555", fontSize: 13 }}>Source Name</span>
             </div>
 
             {/* Gerrit Project Name (store project only; URL resolved at generation) */}
-                <div style={{ marginBottom: 10 }}>
-                  <label style={{ display: "block", fontSize: 12, color: "#666" }}>
-                    gerrit project name
-                  </label>
-                  <textarea
-                    value={ref.location}
-                    onChange={(e) => {
-                      const arr = [...editProfile.source_references];
-                      arr[idx].location = e.target.value;
-                      setEditProfile((p) => ({ ...p, source_references: arr }));
-                    }}
-                    style={{
-                      width: 600,
-                      minHeight: 45,
-                      resize: "vertical",
-                    }}
-                    placeholder="GenData/SimulinkFunc"
-                  />
-                  <div style={{ color: "#555", fontSize: 13, marginTop: 4 }}>
-                    Store the Gerrit <em>project name</em> only. The full URL will be generated during “Generate JSON”.
-                  </div>
-                </div>
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                gerrit project name
+              </label>
+              <textarea
+                value={ref.location}
+                onChange={(e) => {
+                  const arr = [...editProfile.source_references];
+                  arr[idx].location = e.target.value;
+                  setEditProfile((p) => ({ ...p, source_references: arr }));
+                }}
+                style={{
+                  width: 600,
+                  minHeight: 45,
+                  resize: "vertical",
+                }}
+                placeholder="GenData/SimulinkFunc"
+              />
+              <div style={{ color: "#555", fontSize: 13, marginTop: 4 }}>
+                Store the Gerrit <em>project name</em> only. The full URL will be generated during “Generate JSON”.
+              </div>
+            </div>
 
             {/* Components */}
             <div
@@ -395,18 +383,18 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                         placeholder="Link (CarWeaver/SystemWeaver)"
                       />
                       <button
-                          type="button"
-                          onClick={() => updateComponentFromCarWeaver(idx, cIdx)}
-                          title="Fetch id/persistent_id/version from CarWeaver"
-                          disabled={!!compLoading[`${idx}:${cIdx}`]}
-                          style={{
-                            whiteSpace: "nowrap",
-                            opacity: compLoading[`${idx}:${cIdx}`] ? 0.6 : 1,
-                            cursor: compLoading[`${idx}:${cIdx}`] ? "not-allowed" : "pointer",
-                          }}
-                        >
-                          {compLoading[`${idx}:${cIdx}`] ? "Updating…" : "Update from CarWeaver"}
-                        </button>
+                        type="button"
+                        onClick={() => updateComponentFromCarWeaver(idx, cIdx)}
+                        title="Fetch id/persistent_id/version from CarWeaver"
+                        disabled={!!compLoading[`${idx}:${cIdx}`]}
+                        style={{
+                          whiteSpace: "nowrap",
+                          opacity: compLoading[`${idx}:${cIdx}`] ? 0.6 : 1,
+                          cursor: compLoading[`${idx}:${cIdx}`] ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {compLoading[`${idx}:${cIdx}`] ? "Updating…" : "Update from CarWeaver"}
+                      </button>
 
                       <button
                         type="button"
@@ -419,9 +407,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                   </div>
 
                   <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>
-                      id
-                    </label>
+                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>id</label>
                     <input
                       value={c.id}
                       readOnly
@@ -443,9 +429,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                   </div>
 
                   <div>
-                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>
-                      version
-                    </label>
+                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>version</label>
                     <input
                       value={c.version}
                       readOnly
@@ -470,77 +454,87 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                     padding: 8,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+                  {/* Title */}
+                  <div style={{ marginBottom: 6 }}>
+                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>title</label>
                     <input
                       placeholder="Title"
-                      value={info.title}
+                      value={info.title || ""}
                       onChange={(e) => {
                         const refs = [...editProfile.source_references];
                         refs[idx].additional_information[infoIdx].title = e.target.value;
                         setEditProfile((p) => ({ ...p, source_references: refs }));
                       }}
-                      style={{ width: 180, marginRight: 8 }}
+                      style={{ width: 180 }}
                     />
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+
+                  {/* Category (read-only, fixed to design) - SINGLE BLOCK */}
+                  <div style={{ marginBottom: 6 }}>
+                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>category</label>
                     <input
-                      placeholder="Category"
-                      value={info.category}
-                      onChange={(e) => {
-                        const refs = [...editProfile.source_references];
-                        refs[idx].additional_information[infoIdx].category = e.target.value;
-                        setEditProfile((p) => ({ ...p, source_references: refs }));
-                      }}
-                      style={{ width: 120, marginRight: 8 }}
+                      value={info.category || "design"}
+                      readOnly
+                      style={{ width: 180, background: "#eee" }}
+                      title="Category is fixed to 'design'"
                     />
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+
+                  {/* Kind */}
+                  <div style={{ marginBottom: 6 }}>
+                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>kind</label>
                     <select
-                      value={info.kind}
+                      value={info.kind || DEFAULT_KIND}
                       onChange={(e) => {
                         const refs = [...editProfile.source_references];
                         refs[idx].additional_information[infoIdx].kind = e.target.value;
                         setEditProfile((p) => ({ ...p, source_references: refs }));
                       }}
-                      style={{ width: 140, marginRight: 8 }}
+                      style={{ width: 140 }}
                     >
                       <option value="Simulink">Simulink</option>
                       <option value="Generated Code">Generated Code</option>
                     </select>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+
+                  {/* Content type */}
+                  <div style={{ marginBottom: 6 }}>
+                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                      content_type
+                    </label>
                     <select
-                      value={info.content_type}
+                      value={info.content_type || DEFAULT_CONTENT_TYPE}
                       onChange={(e) => {
                         const refs = [...editProfile.source_references];
                         refs[idx].additional_information[infoIdx].content_type = e.target.value;
                         setEditProfile((p) => ({ ...p, source_references: refs }));
                       }}
-                      style={{ width: 180, marginRight: 8 }}
+                      style={{ width: 220 }}
                     >
                       <option value="application/model">application/model</option>
                       <option value="application/source code">application/source code</option>
                     </select>
                   </div>
-                  <div style={{ marginBottom: 6 }}>
-                      <label style={{ display: "block", fontSize: 12, color: "#666" }}>
-                        gerrit project name (optional)
-                      </label>
-                      <textarea
-                        value={info.location}
-                        onChange={(e) => {
-                          const refs = [...editProfile.source_references];
-                          refs[idx].additional_information[infoIdx].location = e.target.value;
-                          setEditProfile((p) => ({ ...p, source_references: refs }));
-                        }}
-                        style={{ width: 600, minHeight: 40, resize: "vertical" }}
-                        placeholder="GenData/SimulinkFunc (leave empty to use the Source Reference project)"
-                      />
-                      <div style={{ color: "#555", fontSize: 12, marginTop: 4 }}>
-                        Stored as a Gerrit <em>project name</em>. The tag URL is resolved during “Generate JSON”.
-                      </div>
-                    </div>
 
+                  {/* Gerrit project name (optional) */}
+                  <div style={{ marginBottom: 6 }}>
+                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                      gerrit project name (optional)
+                    </label>
+                    <textarea
+                      value={info.location || ""}
+                      onChange={(e) => {
+                        const refs = [...editProfile.source_references];
+                        refs[idx].additional_information[infoIdx].location = e.target.value;
+                        setEditProfile((p) => ({ ...p, source_references: refs }));
+                      }}
+                      style={{ width: 600, minHeight: 40, resize: "vertical" }}
+                      placeholder="GenData/SimulinkFunc (leave empty to use the Source Reference project)"
+                    />
+                    <div style={{ color: "#555", fontSize: 12, marginTop: 4 }}>
+                      Stored as a Gerrit <em>project name</em>. The tag URL is resolved during “Generate JSON”.
+                    </div>
+                  </div>
 
                   <button
                     type="button"
@@ -564,11 +558,10 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                 type="button"
                 onClick={() => {
                   const refs = [...(editProfile.source_references || [])];
-                  refs[idx].additional_information =
-                    refs[idx].additional_information || [];
+                  refs[idx].additional_information = refs[idx].additional_information || [];
                   refs[idx].additional_information.push({
                     title: "",
-                    category: DEFAULT_CATEGORY,
+                    category: DEFAULT_CATEGORY, // usually "design"
                     kind: DEFAULT_KIND,
                     content_type: DEFAULT_CONTENT_TYPE,
                     location: "",
@@ -581,6 +574,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
             </div>
           </div>
         ))}
+
         <button
           onClick={() => {
             const existing = [...(editProfile.source_references || [])];
@@ -778,120 +772,6 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
           }
         >
           Add SWDD
-        </button>
-      </div>
-
-      {/* -------- ARTIFACTS -------- */}
-      <div
-        style={{
-          background: "#fef7fa",
-          padding: 18,
-          borderRadius: 8,
-          marginBottom: 16,
-          border: "1px solid #eed3e4",
-        }}
-      >
-        <h4 style={{ margin: 0, marginBottom: 12, color: "#7d3557" }}>Artifacts</h4>
-        {(editProfile.artifacts || []).map((art, idx) => (
-          <div
-            key={idx}
-            style={{
-              border: "1px solid #bbb",
-              margin: 5,
-              padding: 10,
-              borderRadius: 8,
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              position: "relative",
-            }}
-          >
-            {/* Remove Artifact Button */}
-            <button
-              type="button"
-              style={{
-                position: "absolute",
-                top: 8,
-                right: 8,
-                color: "red",
-                background: "transparent",
-                border: "none",
-                fontWeight: "bold",
-              }}
-              onClick={() => {
-                const arr = [...editProfile.artifacts];
-                arr.splice(idx, 1);
-                setEditProfile((p) => ({ ...p, artifacts: arr }));
-              }}
-              title="Remove this Artifact"
-            >
-              Remove
-            </button>
-            <label>Name:</label>
-            <select
-              value={art.name}
-              onChange={(e) => {
-                const arr = [...editProfile.artifacts];
-                arr[idx].name = e.target.value;
-                setEditProfile((p) => ({ ...p, artifacts: arr }));
-              }}
-              style={{ marginLeft: 6, width: 120 }}
-            >
-              <option value="">Select</option>
-              <option value="SUM SWLM">SUM SWLM</option>
-              <option value="SUM SWP1">SUM SWP1</option>
-              <option value="SUM SWP2">SUM SWP2</option>
-              <option value="SUM SWP3">SUM SWP3</option>
-              <option value="SUM SWP4">SUM SWP4</option>
-            </select>
-            <span
-              style={{
-                color: "#555",
-                fontSize: 13,
-                marginLeft: 10,
-                marginRight: 10,
-              }}
-            >
-              Artifact name
-            </span>
-            <label>Version:</label>
-            <input
-              value={art.version}
-              readOnly
-              style={{
-                background: "#eee",
-                width: 140,
-                marginLeft: 6,
-                marginRight: 10,
-              }}
-              placeholder="Will be filled at generation"
-            />
-          </div>
-        ))}
-        <button
-          onClick={() =>
-            setEditProfile((p) => ({
-              ...p,
-              artifacts: [
-                ...(p.artifacts || []),
-                {
-                  idx: (p.artifacts?.length || 0) + 1,
-                  name: "",
-                  kind: "VBF file",
-                  version: "",
-                  location: "",
-                  sha256: "",
-                  target_platform: DEFAULT_TARGET_PLATFORM,
-                  buildtime_configurations: [
-                    { cp: DEFAULT_CP, cpv: [DEFAULT_CPV] },
-                  ],
-                  source_references_idx: [],
-                },
-              ],
-            }))
-          }
-        >
-          Add Artifact
         </button>
       </div>
 
