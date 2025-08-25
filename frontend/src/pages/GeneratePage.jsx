@@ -26,14 +26,13 @@ export default function GeneratePage() {
 
       const profile = profiles[selectedProfileIdx];
 
-      // Fill all empty "version" fields with sw_version (artifacts too)
+      // Fill all empty "version" fields with sw_version
       const filledProfile = fillVersionFields(profile, sw_version);
 
       // Remove profile_name from the payload
       const { profile_name, ...profileNoName } = filledProfile;
 
       // ----- Resolve Gerrit URLs for each source reference -----
-      // ref.location holds a Gerrit *project name*, not a URL
       const refs = Array.isArray(profileNoName.source_references)
         ? profileNoName.source_references
         : [];
@@ -49,16 +48,14 @@ export default function GeneratePage() {
               const r = await getGerritTagUrl(baseProject, sw_version); // { url }
               refUrl = r.url || baseProject;
             } catch {
-              refUrl = baseProject; // fall back to project string
+              refUrl = baseProject;
             }
           }
 
-          // Resolve each Additional Information item individually:
-          // if info.location provided, use that project name; else inherit ref project
+          // Resolve Additional Information entries
           const ai = Array.isArray(ref.additional_information)
             ? ref.additional_information
             : [];
-
           const resolvedAI = await Promise.all(
             ai.map(async (info) => {
               const aiProject = (info.location || baseProject || "").trim();
@@ -71,26 +68,19 @@ export default function GeneratePage() {
                   aiUrl = aiProject;
                 }
               }
-              return {
-                ...info,
-                location: aiUrl, // write resolved URL
-              };
+              return { ...info, location: aiUrl };
             })
           );
 
-          // change_log: set version to the release (sw_version) and location to refUrl
+          // change_log: version set to sw_version, location to resolved refUrl
           const change_log =
             ref.change_log && typeof ref.change_log === "object"
-              ? {
-                  ...ref.change_log,
-                  version: sw_version,
-                  location: refUrl,
-                }
+              ? { ...ref.change_log, version: sw_version, location: refUrl }
               : { filenamn: "Gerrit log", version: sw_version, location: refUrl };
 
           return {
             ...ref,
-            location: refUrl, // write resolved URL into the ref itself
+            location: refUrl,
             additional_information: resolvedAI,
             change_log,
             components: Array.isArray(ref.components) ? ref.components : [],
@@ -115,7 +105,6 @@ export default function GeneratePage() {
               location = meta.location || "";
               sha256 = meta.sha256 || "";
             } catch (e) {
-              // Non-fatal: keep empty values and let user inspect toast/error
               showToast?.(
                 `Artifact "${name}": ${e?.message || "failed to resolve"}`,
                 "error"
@@ -127,7 +116,7 @@ export default function GeneratePage() {
             idx: i + 1,
             name,
             kind: "VBF file",
-            version: a.version || sw_version, // keep filled by fillVersionFields or default to sw_version
+            version: a.version || sw_version,
             location,
             sha256,
             target_platform: "SUM1",
@@ -139,17 +128,11 @@ export default function GeneratePage() {
         })
       );
 
-      // Build final result
       const result = {
         ...profileNoName,
         source_references: renumberSourceReferences(resolvedRefs),
         artifacts: resolvedArtifacts,
-        sw_version, // explicit
-        // sw_package_version is usually the numeric part + ".0" but
-        // it's already not strictly required when sw_version is present.
-        // If you still want it computed, uncomment below:
-        // sw_package_version:
-        //   (sw_version.includes("_") ? sw_version.split("_").pop() : sw_version) + ".0",
+        sw_version,
       };
 
       setGenerated(orderGeneratedForDisplay(result));
@@ -159,22 +142,26 @@ export default function GeneratePage() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 1000,
-        margin: "0 auto",
-        padding: 32,
-        display: "flex",
-        gap: 32,
-      }}
-    >
-      <div style={{ flex: 1 }}>
-        <h2>Generate SW Package JSON</h2>
-        <label style={{ fontWeight: "bold" }}>Select Profile: </label>
+    <div style={{ maxWidth: 1400, margin: "0 auto", padding: 16 }}>
+      {/* Top bar with the single-line controls */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 12,
+          padding: "12px 0",
+          borderBottom: "1px solid #eee",
+          marginBottom: 12,
+        }}
+      >
+        <strong>Generate SW Package JSON</strong>
+
+        <label style={{ marginLeft: 8 }}>Select Profile:</label>
         <select
           value={selectedProfileIdx}
           onChange={(e) => setSelectedProfileIdx(Number(e.target.value))}
-          style={{ fontSize: 16, marginLeft: 8 }}
+          style={{ fontSize: 14 }}
         >
           {profiles.map((p, idx) => (
             <option key={p.sw_package_id} value={idx}>
@@ -182,28 +169,32 @@ export default function GeneratePage() {
             </option>
           ))}
         </select>
-        <div style={{ marginTop: 18 }}>
-          <label>SW Version (e.g. BSW_VCC_20.0.1): </label>
-          <input
-            value={generationInput.sw_version}
-            onChange={(e) =>
-              setGenerationInput({ ...generationInput, sw_version: e.target.value })
-            }
-            style={{ width: 220, marginLeft: 8 }}
-            placeholder="BSW_VCC_20.0.1"
-          />
-          <button
-            style={{ marginLeft: 16, padding: "4px 16px" }}
-            onClick={handleGenerate}
-            disabled={loading}
-            title="Generate JSON using Gerrit & Artifactory lookups"
-          >
-            {loading ? "Generating…" : "Generate JSON"}
-          </button>
-        </div>
+
+        <label>SW Version:</label>
+        <input
+          value={generationInput.sw_version}
+          onChange={(e) =>
+            setGenerationInput({ ...generationInput, sw_version: e.target.value })
+          }
+          style={{ width: 240 }}
+          placeholder="BSW_VCC_20.0.1"
+        />
+
+        <button
+          onClick={handleGenerate}
+          disabled={loading}
+          style={{ padding: "4px 16px" }}
+          title="Generate JSON using Gerrit & Artifactory lookups"
+        >
+          {loading ? "Generating…" : "Generate JSON"}
+        </button>
       </div>
 
-      <GeneratedJsonPanel value={generated} />
+      {/* Full-width, full-height JSON panel */}
+      <GeneratedJsonPanel
+        value={generated}
+        height={`calc(100vh - 140px)`} // adjust if your header is taller
+      />
     </div>
   );
 }
