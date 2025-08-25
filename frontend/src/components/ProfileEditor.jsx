@@ -336,7 +336,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                   minHeight: 45,
                   resize: "vertical",
                 }}
-                placeholder="GenData/SimulinkFunc"
+                placeholder="Enter Gerrit project name"
               />
               <div style={{ color: "#555", fontSize: 13, marginTop: 4 }}>
                 Store the Gerrit <em>project name</em> only. The full URL will be generated during “Generate JSON”.
@@ -508,19 +508,19 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
 
                   {/* Content type */}
                   <div style={{ marginBottom: 6 }}>
-                      <label style={{ display: "block", fontSize: 12, color: "#666" }}>content_type</label>
-                      <input
-                        value={contentTypeFor(info.kind || "Simulink")}
-                        readOnly
-                        style={{ width: 220, background: "#eee" }}
-                        title="Content type follows Kind"
-                      />
-                    </div>
+                    <label style={{ display: "block", fontSize: 12, color: "#666" }}>content_type</label>
+                    <input
+                      value={contentTypeFor(info.kind || "Simulink")}
+                      readOnly
+                      style={{ width: 220, background: "#eee" }}
+                      title="Content type follows Kind"
+                    />
+                  </div>
 
                   {/* Gerrit project name (optional) */}
                   <div style={{ marginBottom: 6 }}>
                     <label style={{ display: "block", fontSize: 12, color: "#666" }}>
-                      gerrit project name (optional)
+                      gerrit project name
                     </label>
                     <textarea
                       value={info.location || ""}
@@ -530,7 +530,7 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
                         setEditProfile((p) => ({ ...p, source_references: refs }));
                       }}
                       style={{ width: 600, minHeight: 40, resize: "vertical" }}
-                      placeholder="GenData/SimulinkFunc (leave empty to use the Source Reference project)"
+                      placeholder="Add gerrit project name"
                     />
                     <div style={{ color: "#555", fontSize: 12, marginTop: 4 }}>
                       Stored as a Gerrit <em>project name</em>. The tag URL is resolved during “Generate JSON”.
@@ -573,6 +573,64 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
               >
                 Add Additional Information
               </button>
+            </div>
+            {/* ---- CHANGE LOG (per source reference) ---- */}
+            <div
+              style={{
+                marginTop: 10,
+                marginBottom: 10,
+                background: "#fff7f0",
+                border: "1px solid #f0d9b5",
+                padding: 10,
+                borderRadius: 8,
+              }}
+            >
+              <strong style={{ color: "#8a5a1f" }}>Change Log</strong>
+
+              {/* filename (read-only) */}
+              <div style={{ marginTop: 8 }}>
+                <label style={{ display: "block", fontSize: 12, color: "#666" }}>filename</label>
+                <input
+                  value={ref.change_log?.filename ?? "Gerrit log"}
+                  readOnly
+                  style={{ width: 300, background: "#eee" }}
+                  title="Fixed filename"
+                  placeholder="Gerrit log"
+                />
+              </div>
+
+              {/* version (read-only, filled during Generate) */}
+              <div style={{ marginTop: 8 }}>
+                <label style={{ display: "block", fontSize: 12, color: "#666" }}>version</label>
+                <input
+                  value={ref.change_log?.version ?? ""}
+                  readOnly
+                  style={{ width: 200, background: "#eee" }}
+                  placeholder="(filled during Generate)"
+                  title="Filled during Generate"
+                />
+              </div>
+
+              {/* Gerrit project (optional override; resolved to URL at Generate) */}
+              <div style={{ marginTop: 8 }}>
+                <label style={{ display: "block", fontSize: 12, color: "#666" }}>
+                  gerrit project name (optional)
+                </label>
+                <textarea
+                  value={ref.change_log?.location ?? ""}
+                  onChange={(e) => {
+                    const arr = [...(editProfile.source_references || [])];
+                    const prev = arr[idx].change_log || {};
+                    arr[idx].change_log = { ...prev, location: e.target.value };
+                    setEditProfile((p) => ({ ...p, source_references: arr }));
+                  }}
+                  style={{ width: 600, minHeight: 40, resize: "vertical" }}
+                  placeholder="Gerrit project name"
+                />
+                <div style={{ color: "#555", fontSize: 12, marginTop: 4 }}>
+                  Store a Gerrit <em>project name</em>. Currently specify full link to log manually.
+                </div>
+              </div>
             </div>
           </div>
         ))}

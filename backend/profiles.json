@@ -45,6 +45,234 @@
           "version": "",
           "location": ""
         }
+      },
+      {
+        "idx": 2,
+        "name": "Air Suspension Controller",
+        "version": "",
+        "location": "",
+        "components": [
+          {
+            "id": "C-9872",
+            "persistent_id": "C-23434",
+            "version": "18",
+            "location": "url:swap://SystemWeaver:3000/x040000000302858D"
+          }
+        ],
+        "additional_information": [
+          {
+            "title": "ShrdSrvQM",
+            "category": "design",
+            "kind": "Simulink",
+            "content_type": "application/model",
+            "location": "SWComponents/SharedServices"
+          },
+          {
+            "title": "ShrdSrvQM",
+            "category": "design",
+            "kind": "Generated Code",
+            "content_type": "application/source code",
+            "location": "GenData/SimulinkFunc"
+          }
+        ],
+        "regulatory_requirements": [
+          "N/A"
+        ],
+        "change_log": {
+          "filenamn": "Gerrit log",
+          "version": "",
+          "location": ""
+        }
+      },
+      {
+        "idx": 3,
+        "name": "Air Suspension Controller",
+        "version": "",
+        "location": "SWComponents/LevelingControl",
+        "components": [
+          {
+            "id": "C-9872",
+            "persistent_id": "C-23434",
+            "version": "18",
+            "location": "url:swap://SystemWeaver:3000/x040000000302858D"
+          }
+        ],
+        "additional_information": [
+          {
+            "title": "AirPMngt",
+            "category": "design",
+            "kind": "Simulink",
+            "content_type": "application/model",
+            "location": "SWComponents/LevelingControl"
+          },
+          {
+            "title": "AirPMngt",
+            "category": "design",
+            "kind": "Generated Code",
+            "content_type": "application/source code",
+            "location": "GenData/SimulinkFunc"
+          }
+        ],
+        "regulatory_requirements": [
+          "N/A"
+        ],
+        "change_log": {
+          "filenamn": "Gerrit log",
+          "version": "",
+          "location": ""
+        }
+      },
+      {
+        "idx": 4,
+        "name": "Air Suspension Controller",
+        "version": "",
+        "location": "SWComponents/LevelingControl",
+        "components": [
+          {
+            "id": "C-9872",
+            "persistent_id": "C-23434",
+            "version": "18",
+            "location": "url:swap://SystemWeaver:3000/x040000000302858D"
+          }
+        ],
+        "additional_information": [
+          {
+            "title": "LvlCtrlMod",
+            "category": "design",
+            "kind": "Simulink",
+            "content_type": "application/model",
+            "location": "SWComponents/LevelingControl"
+          },
+          {
+            "title": "LvlCtrlMod",
+            "category": "design",
+            "kind": "Generated Code",
+            "content_type": "application/source code",
+            "location": "GenData/SimulinkFunc"
+          }
+        ],
+        "regulatory_requirements": [
+          "N/A"
+        ],
+        "change_log": {
+          "filenamn": "Gerrit log",
+          "version": "",
+          "location": ""
+        }
+      },
+      {
+        "idx": 5,
+        "name": "Air Suspension Controller",
+        "version": "",
+        "location": "SWComponents/LevelingControl",
+        "components": [
+          {
+            "id": "C-9872",
+            "persistent_id": "C-23434",
+            "version": "18",
+            "location": "url:swap://SystemWeaver:3000/x040000000302858D"
+          }
+        ],
+        "additional_information": [
+          {
+            "title": "AirSuspCptDiagc",
+            "category": "design",
+            "kind": "Simulink",
+            "content_type": "application/model",
+            "location": "SWComponents/LevelingControl"
+          },
+          {
+            "title": "AirSuspCptDiagc",
+            "category": "design",
+            "kind": "Generated Code",
+            "content_type": "application/source code",
+            "location": "GenData/SimulinkFunc"
+          }
+        ],
+        "regulatory_requirements": [
+          "N/A"
+        ],
+        "change_log": {
+          "filenamn": "Gerrit log",
+          "version": "",
+          "location": ""
+        }
+      },
+      {
+        "idx": 6,
+        "name": "Air Suspension Controller",
+        "version": "",
+        "location": "SWComponents/LevelingControl",
+        "components": [
+          {
+            "id": "C-9872",
+            "persistent_id": "C-23434",
+            "version": "18",
+            "location": "url:swap://SystemWeaver:3000/x040000000302858D"
+          }
+        ],
+        "additional_information": [
+          {
+            "title": "MonrVehLvl",
+            "category": "design",
+            "kind": "Simulink",
+            "content_type": "application/model",
+            "location": "SWC_ASIL/LevelingControl"
+          },
+          {
+            "title": "MonrVehLvl",
+            "category": "design",
+            "kind": "Generated Code",
+            "content_type": "application/source code",
+            "location": "GenData/SimulinkFunc"
+          }
+        ],
+        "regulatory_requirements": [
+          "N/A"
+        ],
+        "change_log": {
+          "filenamn": "Gerrit log",
+          "version": "",
+          "location": ""
+        }
+      },
+      {
+        "idx": 7,
+        "name": "Spring Stiffness Controller",
+        "version": "",
+        "location": "SWComponents/LevelingControl",
+        "components": [
+          {
+            "id": "C-9872",
+            "persistent_id": "C-23434",
+            "version": "18",
+            "location": "url:swap://SystemWeaver:3000/x040000000302858D"
+          }
+        ],
+        "additional_information": [
+          {
+            "title": "AirSprgVolMngt",
+            "category": "design",
+            "kind": "Simulink",
+            "content_type": "application/model",
+            "location": "SWComponents/LevelingControl"
+          },
+          {
+            "title": "AirSprgVolMngt",
+            "category": "design",
+            "kind": "Generated Code",
+            "content_type": "application/source code",
+            "location": "GenData/SimulinkFunc"
+          }
+        ],
+        "regulatory_requirements": [
+          "N/A"
+        ],
+        "change_log": {
+          "filenamn": "Gerrit log",
+          "version": "",
+          "location": ""
+        }
       }
     ],
     "swad": [
@@ -56,9 +284,9 @@
     ],
     "swdd": [
       {
-        "id": "",
-        "name": "",
-        "location": ""
+        "id": "34176208",
+        "name": "NOTE-SWDD-34176208-01/10-SUM Functions",
+        "location": "https://tcdocweb.got.volvocars.net/tcdocweb/Search?xuid=54556b64624f476368686c4b6844"
       }
     ],
     "artifacts": []
