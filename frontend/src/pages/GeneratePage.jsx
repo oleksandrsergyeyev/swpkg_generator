@@ -1,3 +1,4 @@
+// src/pages/GeneratePage.jsx
 import React, { useState } from "react";
 import { useProfiles } from "../context/ProfilesContext";
 import {
@@ -7,86 +8,148 @@ import {
 } from "../utils/profile";
 import GeneratedJsonPanel from "../components/GeneratedJsonPanel";
 import { getGerritTagUrl } from "../api/gerrit";
+import { resolveArtifactMeta } from "../api/artifacts";
 
 export default function GeneratePage() {
-  const { profiles } = useProfiles();
+  const { profiles, showToast } = useProfiles();
   const [selectedProfileIdx, setSelectedProfileIdx] = useState(0);
   const [generationInput, setGenerationInput] = useState({ sw_version: "" });
   const [generated, setGenerated] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
-    const sw_version = generationInput.sw_version;
+    const sw_version = generationInput.sw_version.trim();
     if (!sw_version) return;
 
     try {
       setLoading(true);
 
       const profile = profiles[selectedProfileIdx];
-      const sw_package_version =
-        (sw_version.includes("_") ? sw_version.split("_").pop() : sw_version) +
-        ".0";
 
-      // fill empty "version" fields with sw_version
+      // Fill all empty "version" fields with sw_version (artifacts too)
       const filledProfile = fillVersionFields(profile, sw_version);
 
-      // Remove profile_name in result
+      // Remove profile_name from the payload
       const { profile_name, ...profileNoName } = filledProfile;
 
-      // Resolve Gerrit URLs for each source reference (location holds PROJECT NAME)
-      const refs = profileNoName.source_references || [];
+      // ----- Resolve Gerrit URLs for each source reference -----
+      // ref.location holds a Gerrit *project name*, not a URL
+      const refs = Array.isArray(profileNoName.source_references)
+        ? profileNoName.source_references
+        : [];
+
       const resolvedRefs = await Promise.all(
         refs.map(async (ref) => {
-          // Resolve URL for the Source Reference project
-          const refProject = (ref.location || "").trim();
-          let refUrl = refProject;
-          if (refProject) {
+          const baseProject = (ref.location || "").trim();
+
+          // Resolve URL for the ref itself (if project provided)
+          let refUrl = baseProject;
+          if (baseProject) {
             try {
-              const res = await getGerritTagUrl(refProject, sw_version); // { url }
-              refUrl = res.url || refProject;
+              const r = await getGerritTagUrl(baseProject, sw_version); // { url }
+              refUrl = r.url || baseProject;
             } catch {
-              refUrl = refProject; // fallback to project string
+              refUrl = baseProject; // fall back to project string
             }
           }
 
-          // clone and write resolved URL for the ref
-          const out = { ...ref, location: refUrl };
+          // Resolve each Additional Information item individually:
+          // if info.location provided, use that project name; else inherit ref project
+          const ai = Array.isArray(ref.additional_information)
+            ? ref.additional_information
+            : [];
 
-          // change_log uses the ref URL
-          if (out.change_log && typeof out.change_log === "object") {
-            out.change_log = { ...out.change_log, location: refUrl };
-          }
-
-          // additional_information: resolve each item individually (fallback to ref project)
-          if (Array.isArray(out.additional_information)) {
-            out.additional_information = await Promise.all(
-              out.additional_information.map(async (ai) => {
-                const aiProject = (ai.location || "").trim();
-                if (!aiProject) {
-                  // no AI project specified -> use refUrl
-                  return { ...ai, location: refUrl };
-                }
+          const resolvedAI = await Promise.all(
+            ai.map(async (info) => {
+              const aiProject = (info.location || baseProject || "").trim();
+              let aiUrl = aiProject;
+              if (aiProject) {
                 try {
                   const r = await getGerritTagUrl(aiProject, sw_version);
-                  return { ...ai, location: r.url || aiProject };
+                  aiUrl = r.url || aiProject;
                 } catch {
-                  return { ...ai, location: aiProject };
+                  aiUrl = aiProject;
                 }
-              })
-            );
-          }
+              }
+              return {
+                ...info,
+                location: aiUrl, // write resolved URL
+              };
+            })
+          );
 
-          // keep components array sane
-          out.components = Array.isArray(out.components) ? out.components : [];
-          return out;
+          // change_log: set version to the release (sw_version) and location to refUrl
+          const change_log =
+            ref.change_log && typeof ref.change_log === "object"
+              ? {
+                  ...ref.change_log,
+                  version: sw_version,
+                  location: refUrl,
+                }
+              : { filenamn: "Gerrit log", version: sw_version, location: refUrl };
+
+          return {
+            ...ref,
+            location: refUrl, // write resolved URL into the ref itself
+            additional_information: resolvedAI,
+            change_log,
+            components: Array.isArray(ref.components) ? ref.components : [],
+          };
         })
       );
 
+      // ----- Resolve Artifacts via Artifactory API -----
+      const arts = Array.isArray(profileNoName.artifacts)
+        ? profileNoName.artifacts
+        : [];
+
+      const resolvedArtifacts = await Promise.all(
+        arts.map(async (a, i) => {
+          const name = (a.name || "").trim();
+          let location = "";
+          let sha256 = "";
+
+          if (name) {
+            try {
+              const meta = await resolveArtifactMeta(name, sw_version); // { location, sha256 }
+              location = meta.location || "";
+              sha256 = meta.sha256 || "";
+            } catch (e) {
+              // Non-fatal: keep empty values and let user inspect toast/error
+              showToast?.(
+                `Artifact "${name}": ${e?.message || "failed to resolve"}`,
+                "error"
+              );
+            }
+          }
+
+          return {
+            idx: i + 1,
+            name,
+            kind: "VBF file",
+            version: a.version || sw_version, // keep filled by fillVersionFields or default to sw_version
+            location,
+            sha256,
+            target_platform: "SUM1",
+            buildtime_configurations: [{ cp: "VCTN", cpv: ["PRR"] }],
+            source_references_idx: Array.isArray(a.source_references_idx)
+              ? [...a.source_references_idx].sort((x, y) => x - y)
+              : [],
+          };
+        })
+      );
+
+      // Build final result
       const result = {
         ...profileNoName,
         source_references: renumberSourceReferences(resolvedRefs),
-        sw_package_version,
-        sw_version,
+        artifacts: resolvedArtifacts,
+        sw_version, // explicit
+        // sw_package_version is usually the numeric part + ".0" but
+        // it's already not strictly required when sw_version is present.
+        // If you still want it computed, uncomment below:
+        // sw_package_version:
+        //   (sw_version.includes("_") ? sw_version.split("_").pop() : sw_version) + ".0",
       };
 
       setGenerated(orderGeneratedForDisplay(result));
@@ -126,17 +189,20 @@ export default function GeneratePage() {
             onChange={(e) =>
               setGenerationInput({ ...generationInput, sw_version: e.target.value })
             }
-            style={{ width: 200, marginLeft: 8 }}
+            style={{ width: 220, marginLeft: 8 }}
+            placeholder="BSW_VCC_20.0.1"
           />
           <button
             style={{ marginLeft: 16, padding: "4px 16px" }}
             onClick={handleGenerate}
             disabled={loading}
+            title="Generate JSON using Gerrit & Artifactory lookups"
           >
             {loading ? "Generating…" : "Generate JSON"}
           </button>
         </div>
       </div>
+
       <GeneratedJsonPanel value={generated} />
     </div>
   );

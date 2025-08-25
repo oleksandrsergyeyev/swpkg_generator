@@ -106,6 +106,23 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
     onSaved && onSaved(editIdx != null ? editProfile : editProfile, editIdx);
   };
 
+    // ===== Artifacts helpers =====
+    const updateArtifactName = (aIdx, value) => {
+      const arts = [...(editProfile.artifacts || [])];
+      arts[aIdx] = { ...arts[aIdx], name: value };
+      setEditProfile((p) => ({ ...p, artifacts: arts }));
+    };
+
+    const toggleArtifactRef = (aIdx, refIdxNumber) => {
+      const arts = [...(editProfile.artifacts || [])];
+      const cur = new Set(arts[aIdx].source_references_idx || []);
+      if (cur.has(refIdxNumber)) cur.delete(refIdxNumber);
+      else cur.add(refIdxNumber);
+      arts[aIdx].source_references_idx = Array.from(cur).sort((a, b) => a - b);
+      setEditProfile((p) => ({ ...p, artifacts: arts }));
+    };
+
+
   return (
     <div
       style={{
@@ -834,6 +851,188 @@ export default function ProfileEditor({ initial, editIdx, onCancel, onSaved }) {
           Add SWDD
         </button>
       </div>
+
+{/* -------- ARTIFACTS -------- */}
+<div
+  style={{
+    background: "#fef7fa",
+    padding: 18,
+    borderRadius: 8,
+    marginBottom: 16,
+    border: "1px solid #eed3e4",
+  }}
+>
+  <h4 style={{ margin: 0, marginBottom: 12, color: "#7d3557" }}>Artifacts</h4>
+
+  {(editProfile.artifacts || []).map((art, aIdx) => {
+    const refs = editProfile.source_references || [];
+    const idxAuto = (aIdx + 1);
+    return (
+      <div
+        key={aIdx}
+        style={{
+          border: "1px solid #bbb",
+          margin: 8,
+          padding: 12,
+          borderRadius: 8,
+          background: "#fff",
+          position: "relative",
+        }}
+      >
+        {/* Remove Artifact */}
+        <button
+          type="button"
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            color: "red",
+            background: "transparent",
+            border: "none",
+            fontWeight: "bold",
+          }}
+          onClick={() => {
+            const arr = [...(editProfile.artifacts || [])];
+            arr.splice(aIdx, 1);
+            setEditProfile((p) => ({ ...p, artifacts: arr }));
+          }}
+          title="Remove this Artifact"
+        >
+          Remove
+        </button>
+
+        {/* idx (auto, read-only) */}
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>idx</label>
+          <input value={idxAuto} readOnly style={{ width: 100, background: "#eee" }} />
+        </div>
+
+        {/* name (editable) */}
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>name</label>
+          <textarea
+            value={art.name || ""}
+            onChange={(e) => updateArtifactName(aIdx, e.target.value)}
+            style={{ width: 300, minHeight: 40, resize: "vertical" }}
+            placeholder='e.g. "SUM SWLM", "SUM SWP1"'
+          />
+        </div>
+
+        {/* kind (static, read-only) */}
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>kind</label>
+          <input value="VBF file" readOnly style={{ width: 200, background: "#eee" }} />
+        </div>
+
+        {/* version (generated, read-only) */}
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>version</label>
+          <input
+            value={art.version || ""}
+            readOnly
+            style={{ width: 260, background: "#eee" }}
+            placeholder="(filled during Generate)"
+            title="Filled from SW version during Generate"
+          />
+        </div>
+
+        {/* location (generated, read-only) */}
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>location</label>
+          <input
+            value={art.location || ""}
+            readOnly
+            style={{ width: 640, background: "#eee" }}
+            placeholder="(Artifactory URL resolved during Generate)"
+            title="Resolved using Artifactory metadata during Generate"
+          />
+        </div>
+
+        {/* sha256 (generated, read-only) */}
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>sha256</label>
+          <input
+            value={art.sha256 || ""}
+            readOnly
+            style={{ width: 640, background: "#eee" }}
+            placeholder="(checksum resolved during Generate)"
+          />
+        </div>
+
+        {/* target_platform (static, read-only) */}
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ display: "block", fontSize: 12, color: "#666" }}>target_platform</label>
+          <input value="SUM1" readOnly style={{ width: 160, background: "#eee" }} />
+        </div>
+
+        {/* buildtime_configurations (static, read-only) */}
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed #ddd" }}>
+          <strong>buildtime_configurations</strong>
+          <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "120px 1fr", gap: 8 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 12, color: "#666" }}>cp</label>
+              <input value="VCTN" readOnly style={{ width: 120, background: "#eee" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, color: "#666" }}>cpv</label>
+              <input value="PRR" readOnly style={{ width: 200, background: "#eee" }} />
+            </div>
+          </div>
+        </div>
+
+        {/* source_references_idx (checkboxes) */}
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed #ddd" }}>
+          <strong>source_references_idx</strong>
+          <div style={{ marginTop: 6 }}>
+            {refs.length === 0 ? (
+              <div style={{ color: "#777", fontSize: 13 }}>No source references yet.</div>
+            ) : (
+              refs.map((r) => {
+                const checked = (art.source_references_idx || []).includes(r.idx);
+                return (
+                  <label key={r.idx} style={{ display: "inline-flex", alignItems: "center", marginRight: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={!!checked}
+                      onChange={() => toggleArtifactRef(aIdx, r.idx)}
+                      style={{ marginRight: 6 }}
+                    />
+                    <span>#{r.idx} {r.name || "(unnamed)"}</span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  })}
+
+  <button
+    onClick={() =>
+      setEditProfile((p) => ({
+        ...p,
+        artifacts: [
+          ...(p.artifacts || []),
+          {
+            // idx is auto by position
+            name: "",
+            kind: "VBF file",
+            version: "",        // filled at Generate
+            location: "",       // filled at Generate
+            sha256: "",         // filled at Generate
+            target_platform: "SUM1",
+            buildtime_configurations: [{ cp: "VCTN", cpv: ["PRR"] }],
+            source_references_idx: [],
+          },
+        ],
+      }))
+    }
+  >
+    Add Artifact
+  </button>
+</div>
+
 
       {/* ---- SAVE / CANCEL ---- */}
       <div style={{ marginTop: 16 }}>

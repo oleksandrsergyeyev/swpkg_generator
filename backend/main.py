@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from carweaver_client import CarWeaver
 from gerrit_client import GerritClient
+from artifactory_client import ArtifactoryClient
 import json
 import os
 
@@ -307,3 +308,21 @@ def get_gerrit_tag_url(project: str, tag: str):
     if not url:
         raise HTTPException(status_code=404, detail="Tag URL not found")
     return {"url": url}
+
+@app.get("/api/artifacts/resolve")
+def resolve_artifact(name: str, sw_version: str):
+    """
+    Example:
+      GET /api/artifacts/resolve?name=SUM%20SWLM&sw_version=BSW_VCC_20.0.1
+    Returns: { "location": "<download-url>", "sha256": "<sha256>" }
+    """
+    try:
+        repo = os.getenv("ARTIFACTORY_REPO", "ARTBC-SUM-LTS")
+        client = ArtifactoryClient(repo=repo)
+
+        url = client.resolve_url_via_mapping(name=name, sw_version=sw_version)
+        sha = client.sha256_for_url(url)
+
+        return {"location": url, "sha256": sha}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))

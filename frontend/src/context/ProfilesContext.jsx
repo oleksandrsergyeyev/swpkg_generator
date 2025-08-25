@@ -1,3 +1,4 @@
+// src/context/ProfilesContext.jsx
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   fetchProfiles,
@@ -15,6 +16,11 @@ export function useProfiles() {
   const ctx = useContext(ProfilesContext);
   if (!ctx) throw new Error("useProfiles must be used within <ProfilesProvider>");
   return ctx;
+}
+
+// Map content_type from kind
+function contentTypeForKind(kind) {
+  return kind === "Generated Code" ? "application/source code" : "application/model";
 }
 
 export function ProfilesProvider({ children }) {
@@ -36,10 +42,14 @@ export function ProfilesProvider({ children }) {
 
       /**
        * Save (create or update) a profile.
-       * Normalizes:
+       * Normalizes before persisting:
        *  - source_references[].location => Gerrit project name (no URLs)
-       *  - source_references[].additional_information[].location => Gerrit project name (optional)
-       *  - source_references[].change_log.location => "" (URL resolved during Generate)
+       *  - additional_information[].{category,kind,content_type,location}
+       *      category: "design" (static)
+       *      content_type derived from kind
+       *      location stored as Gerrit project name (optional; blank = inherit)
+       *  - change_log: keep filenamn, clear version/location (resolved during Generate)
+       *  - artifacts: keep only editable fields; static/auto fields empty/preset
        */
       saveProfile: async (editProfile, profileEditIdx) => {
         if (!editProfile?.sw_package_id) {
@@ -49,23 +59,39 @@ export function ProfilesProvider({ children }) {
         const arr = [...profiles];
         const numericId = Number(editProfile.sw_package_id);
 
-        // Normalize and renumber source references before saving
+        // Normalize & renumber source references
         const normalizedRefs = renumberSourceReferences(
           (editProfile.source_references || []).map((sr) => {
+            // Always store Gerrit project name only
             const projectName = toProjectName(sr.location);
 
+            // Additional Information normalization
             const normAI = Array.isArray(sr.additional_information)
-              ? sr.additional_information.map((ai) => ({
-                  ...ai,
-                  // Store as Gerrit project name if provided; empty means "inherit from ref"
-                  location: toProjectName(ai.location || ""),
-                }))
+              ? sr.additional_information.map((ai) => {
+                  const kind = ai.kind === "Generated Code" ? "Generated Code" : "Simulink";
+                  return {
+                    ...ai,
+                    category: "design",
+                    kind,
+                    content_type: contentTypeForKind(kind),
+                    // store as Gerrit project name only (optional)
+                    location: toProjectName(ai.location || ""),
+                  };
+                })
               : [];
 
-            const normCL =
-              sr.change_log && typeof sr.change_log === "object"
-                ? { ...sr.change_log, location: "" } // resolved at Generate time
-                : { filenamn: "", version: "", location: "" };
+            // Keep filenamn, clear version/location to be resolved at Generate
+            const prevCL =
+              sr.change_log && typeof sr.change_log === "object" ? sr.change_log : {};
+            const filenamn =
+              typeof prevCL.filenamn === "string" && prevCL.filenamn
+                ? prevCL.filenamn
+                : "Gerrit log"; // fallback; we’ll rename key later as requested
+            const normCL = {
+              filenamn,
+              version: "", // filled from release version at Generate
+              location: "", // resolved tag URL at Generate
+            };
 
             return {
               ...sr,
@@ -77,11 +103,27 @@ export function ProfilesProvider({ children }) {
           })
         );
 
-        // Final shape for saving (preserves desired ordering of fields)
+        // Normalize Artifacts: enforce static fields; keep blanks for generated fields
+        const normalizedArtifacts = (editProfile.artifacts || []).map((a, i) => ({
+          idx: i + 1,
+          name: a.name || "",
+          kind: "VBF file",
+          version: "", // generated later from SW version
+          location: "", // generated later from Artifactory
+          sha256: "", // generated later from Artifactory
+          target_platform: "SUM1",
+          buildtime_configurations: [{ cp: "VCTN", cpv: ["PRR"] }],
+          source_references_idx: Array.isArray(a.source_references_idx)
+            ? [...a.source_references_idx].sort((x, y) => x - y)
+            : [],
+        }));
+
+        // Final ordered shape for saving
         const toSave = orderProfileForDisplay({
           ...editProfile,
           sw_package_id: numericId,
           source_references: normalizedRefs,
+          artifacts: normalizedArtifacts,
         });
 
         let newIdx;
@@ -97,7 +139,7 @@ export function ProfilesProvider({ children }) {
 
         setProfiles(arr);
         showToast("Profile saved", "success");
-        return newIdx; // caller can set the selected index
+        return newIdx;
       },
 
       deleteProfile: async (idx) => {

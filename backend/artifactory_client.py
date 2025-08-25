@@ -67,7 +67,7 @@ class ArtifactoryClient:
 
         if response.status_code == 200:
             results = response.json().get("results", [])
-            filtered = [m for m in results if m["path"].endswith("SWLM/xcp_disabled/vbf")]
+            filtered = [m for m in results if m["path"].endswith("xcp_disabled/vbf")]
             full_urls = [
                 f"{self.BASE_URL}/{m['repo']}/{m['path']}/{m['name']}"
                 for m in filtered
@@ -80,3 +80,66 @@ class ArtifactoryClient:
                 raise Exception(f"Multiple ({len(full_urls)}) artifacts found, but exactly one expected: {full_urls}")
         else:
             raise Exception(f"Failed to search by properties: {response.status_code} {response.text}")
+
+
+    @staticmethod
+    def _release_from_sw_version(sw_version: str) -> str:
+        """
+        "BSW_VCC_20.0.1" -> "20.0.1"
+        If sw_version has no underscores, just return it.
+        """
+        return sw_version.split("_")[-1] if "_" in sw_version else sw_version
+
+    def _parse_repo_and_path_from_url(self, url: str) -> tuple[str, str]:
+        """
+        Given a full download URL that starts with BASE_URL,
+        return (repo, path_with_name) for /api/storage.
+        """
+        base = self.BASE_URL.rstrip("/")
+        if not url.startswith(base + "/"):
+            raise ValueError("URL does not belong to configured Artifactory BASE_URL")
+
+        # strip base
+        rest = url[len(base) + 1 :]  # after "<base>/"
+        # first segment is repo, remainder is path
+        parts = rest.split("/", 1)
+        if len(parts) != 2:
+            raise ValueError("Unexpected artifact URL format")
+        repo, path_with_name = parts[0], parts[1]
+        return repo, path_with_name
+
+    def sha256_for_url(self, url: str) -> str:
+        """
+        Call /api/storage/{repo}/{path}/{name} and return checksums.sha256
+        """
+        repo, path_with_name = self._parse_repo_and_path_from_url(url)
+        storage = f"{self.BASE_URL}/api/storage/{repo}/{path_with_name}"
+        r = requests.get(storage, headers=self._headers())
+        if r.status_code // 100 != 2:
+            raise Exception(f"Failed to read storage info: {r.status_code} {r.text}")
+        return (r.json().get("checksums") or {}).get("sha256", "")
+
+    # ---------- NEW: mapping-based resolver using your existing 'find_artifact_by_properties' ----------
+
+    def resolve_url_via_mapping(self, name: str, sw_version: str) -> str:
+        """
+        Map UI artifact 'name' + sw_version to Artifactory properties,
+        then reuse 'find_artifact_by_properties(...)' to get ONE URL.
+        """
+        mapping = {
+            # UI Name  -> which property to use for the version AND type to match
+            "SUM SWLM": {"type": "swlm", "key": "baseline.sw.version", "val": lambda sv: sv},
+            "SUM SWP1": {"type": "swp1", "key": "release",               "val": self._release_from_sw_version},
+            "SUM SWP2": {"type": "swp2", "key": "release",               "val": self._release_from_sw_version},
+            "SUM SWP4": {"type": "swp4", "key": "release",               "val": self._release_from_sw_version},
+        }
+        if name not in mapping:
+            raise ValueError(f"Unknown artifact name '{name}'")
+
+        m = mapping[name]
+        key = m["key"]
+        val = m["val"](sw_version)
+        props = {key: val, "type": m["type"]}
+
+        # Reuse your working function
+        return self.find_artifact_by_properties(props)

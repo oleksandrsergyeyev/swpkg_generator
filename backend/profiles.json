@@ -289,6 +289,97 @@
         "location": "https://tcdocweb.got.volvocars.net/tcdocweb/Search?xuid=54556b64624f476368686c4b6844"
       }
     ],
-    "artifacts": []
+    "artifacts": [
+      {
+        "idx": 1,
+        "name": "SUM SWLM",
+        "kind": "VBF file",
+        "version": "",
+        "location": "",
+        "sha256": "",
+        "target_platform": "SUM1",
+        "buildtime_configurations": [
+          {
+            "cp": "VCTN",
+            "cpv": [
+              "PRR"
+            ]
+          }
+        ],
+        "source_references_idx": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ]
+      },
+      {
+        "idx": 2,
+        "name": "SUM SWP1",
+        "kind": "VBF file",
+        "version": "",
+        "location": "",
+        "sha256": "",
+        "target_platform": "SUM1",
+        "buildtime_configurations": [
+          {
+            "cp": "VCTN",
+            "cpv": [
+              "PRR"
+            ]
+          }
+        ],
+        "source_references_idx": [
+          1,
+          2
+        ]
+      },
+      {
+        "idx": 3,
+        "name": "SUM SWP2",
+        "kind": "VBF file",
+        "version": "",
+        "location": "",
+        "sha256": "",
+        "target_platform": "SUM1",
+        "buildtime_configurations": [
+          {
+            "cp": "VCTN",
+            "cpv": [
+              "PRR"
+            ]
+          }
+        ],
+        "source_references_idx": [
+          6
+        ]
+      },
+      {
+        "idx": 4,
+        "name": "SUM SWP4",
+        "kind": "VBF file",
+        "version": "",
+        "location": "",
+        "sha256": "",
+        "target_platform": "SUM1",
+        "buildtime_configurations": [
+          {
+            "cp": "VCTN",
+            "cpv": [
+              "PRR"
+            ]
+          }
+        ],
+        "source_references_idx": [
+          3,
+          4,
+          5,
+          7
+        ]
+      }
+    ]
   }
 ]
