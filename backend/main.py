@@ -5,6 +5,9 @@ from gerrit_client import GerritClient
 from artifactory_client import ArtifactoryClient
 import json
 import os
+import requests
+from typing import Any, Dict, List
+
 
 app = FastAPI()
 app.add_middleware(
@@ -326,3 +329,179 @@ def resolve_artifact(name: str, sw_version: str):
         return {"location": url, "sha256": sha}
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+# --- HELPERS (ADD) ---
+
+def _release_from_sw_version(sw_version: str) -> str:
+    """BSW_VCC_20.0.1 -> 20.0.1"""
+    if not sw_version:
+        return ""
+    return sw_version.split("_")[-1] if "_" in sw_version else sw_version
+
+def _fill_versions(obj: Any, sw_version: str) -> Any:
+    """Recursively fill empty 'version' keys with sw_version."""
+    if isinstance(obj, list):
+        return [_fill_versions(x, sw_version) for x in obj]
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            if k == "version" and (v is None or v == ""):
+                out[k] = sw_version
+            else:
+                out[k] = _fill_versions(v, sw_version)
+        return out
+    return obj
+
+def _renumber_source_references(refs: List[Dict]) -> List[Dict]:
+    return [{**r, "idx": i + 1} for i, r in enumerate(refs or [])]
+
+def _resolve_gerrit_tag_url(project: str, tag: str, g: GerritClient) -> str:
+    project = (project or "").strip()
+    if not project:
+        return ""
+    try:
+        url = g.get_tag_url_by_exact_name(project, tag)
+        return url or project  # fall back to the project string if not found
+    except Exception:
+        return project
+
+# map artifact display names -> Artifactory properties
+_ARTIFACT_MAP = {
+    "SUM SWLM": {"props_kind": "baseline", "props": lambda sw, rel: {"baseline.sw.version": sw, "type": "swlm"}},
+    "SUM SWP1": {"props_kind": "release",  "props": lambda sw, rel: {"release": rel, "type": "swp1"}},
+    "SUM SWP2": {"props_kind": "release",  "props": lambda sw, rel: {"release": rel, "type": "swp2"}},
+    "SUM SWP4": {"props_kind": "release",  "props": lambda sw, rel: {"release": rel, "type": "swp4"}},
+}
+
+def _artifact_sha256_from_url(full_url: str, client: ArtifactoryClient) -> str:
+    """
+    Query Artifactory storage API for checksums of a given full URL.
+    """
+    base = (client.BASE_URL or "").rstrip("/")
+    if not full_url.startswith(base + "/"):
+        return ""
+    rel = full_url[len(base) + 1 :]  # repo/path/name
+    parts = rel.split("/")
+    if len(parts) < 2:
+        return ""
+    repo, path = parts[0], "/".join(parts[1:])
+    r = requests.get(f"{base}/api/storage/{repo}/{path}", headers=client._headers())
+    if r.status_code // 100 != 2:
+        return ""
+    return (r.json().get("checksums") or {}).get("sha256", "") or ""
+
+# --- NEW ENDPOINT (ADD) ---
+@app.post("/api/generate/swlm")
+def generate_swlm(payload: dict):
+    """
+    Body:
+      {
+        "sw_package_id": <number|string>,
+        "sw_version": "BSW_VCC_20.0.1"
+      }
+
+    Returns the final JSON (same as UI) with:
+      - source_references[].location / additional_information[].location / change_log.location resolved to Gerrit tag URLs
+      - artifacts resolved from Artifactory (location + sha256)
+      - empty 'version' fields filled with sw_version
+    """
+    sw_package_id = payload.get("sw_package_id")
+    sw_version = payload.get("sw_version")
+    if not sw_package_id or not sw_version:
+        raise HTTPException(status_code=400, detail="sw_package_id and sw_version are required")
+
+    release = _release_from_sw_version(sw_version)
+
+    # 1) Load profile by id
+    profiles = load_profiles()
+    match = None
+    for p in profiles:
+        if str(p.get("sw_package_id")) == str(sw_package_id):
+            match = p
+            break
+    if not match:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    # 2) Fill missing versions
+    profile_filled = _fill_versions(match, sw_version)
+
+    # 3) Resolve Gerrit URLs
+    g = GerritClient()
+    resolved_refs = []
+    for ref in profile_filled.get("source_references", []) or []:
+        base_project = (ref.get("location") or "").strip()
+
+        # ref location
+        ref_url = _resolve_gerrit_tag_url(base_project, sw_version, g)
+
+        # additional_information
+        ai_resolved = []
+        for ai in ref.get("additional_information", []) or []:
+            ai_project = (ai.get("location") or base_project or "").strip()
+            ai_url = _resolve_gerrit_tag_url(ai_project, sw_version, g) if ai_project else ""
+            ai_resolved.append({**ai, "location": ai_url})
+
+        # change_log: prefer its own project if provided else fallback
+        cl = ref.get("change_log") or {}
+        cl_project = (cl.get("location") or base_project or "").strip()
+        cl_url = _resolve_gerrit_tag_url(cl_project, sw_version, g) if cl_project else ""
+        change_log = {
+            "filenamn": cl.get("filenamn") or cl.get("filename") or "Gerrit log",
+            "version": sw_version,
+            "location": cl_url,
+        }
+
+        resolved_refs.append({
+            **ref,
+            "location": ref_url,
+            "additional_information": ai_resolved,
+            "change_log": change_log,
+            "components": ref.get("components") or [],
+        })
+
+    resolved_refs = _renumber_source_references(resolved_refs)
+
+    # 4) Resolve Artifacts (location + sha256)
+    af = ArtifactoryClient(repo="ARTBC-SUM-LTS")
+    resolved_artifacts = []
+    for i, a in enumerate(profile_filled.get("artifacts", []) or []):
+        name = (a.get("name") or "").strip()
+        loc = ""
+        sha = ""
+        if name in _ARTIFACT_MAP:
+            props = _ARTIFACT_MAP[name]["props"](sw_version, release)
+            try:
+                loc = af.find_artifact_by_properties(props)
+                sha = _artifact_sha256_from_url(loc, af)
+            except Exception as e:
+                # keep loc/sha empty on failure
+                print(f"[artifacts] {name}: {e}")
+
+        resolved_artifacts.append({
+            "idx": i + 1,
+            "name": name,
+            "kind": "VBF file",
+            "version": sw_version,  # UI logic: use SW version
+            "location": loc,
+            "sha256": sha,
+            "target_platform": "SUM1",
+            "buildtime_configurations": [{"cp": "VCTN", "cpv": ["PRR"]}],
+            "source_references_idx": sorted(a.get("source_references_idx") or []),
+        })
+
+    # 5) Build result
+    generic_product_module = profile_filled.get('generic_product_module') or {}
+    result = {
+        "sw_package_id": match.get("sw_package_id"),
+        "generic_product_module": generic_product_module,
+        "source_references": resolved_refs,
+        "swad": profile_filled.get("swad") or [],
+        "swdd": profile_filled.get("swdd") or [],
+        "artifacts": resolved_artifacts,
+        "sw_version": sw_version,
+    }
+    # Optional: add sw_package_version if you want it in the output
+    result["sw_package_version"] = parse_sw_package_version(sw_version)
+
+    return result
